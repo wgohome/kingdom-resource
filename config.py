@@ -1,27 +1,33 @@
-import os
-from dotenv import load_dotenv
-from pathlib import Path
-
-env_path = Path(".") / ".env"
-load_dotenv(dotenv_path=env_path)
+from pydantic import BaseSettings, validator
 
 
-class Settings:
+class Settings(BaseSettings):
     TITLE: str = "Kingdomwide Gene Expression Database"
-    APP_NAME: str = os.getenv("APP_NAME", "fastapi_app")
-    FASTAPI_ENV: str = os.getenv("FASTAPI_ENV", "dev")
+    APP_NAME: str = "default_app"
+    FASTAPI_ENV: str = "dev"
+    MONGO_SERVER: str = "localhost"
+    MONGO_PORT: int = 27017
+    MONGO_USER: str | None = None
+    MONGO_PASSWORD: str | None = None
+    DATABASE_NAME: str | None
+    DATABASE_URL: str | None
 
-    MONGO_SERVER: str = os.getenv("MONGO_SERVER", "localhost")
-    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
-    MONGO_USER: str | None = os.getenv("MONGO_USER")
-    MONGO_PASSWORD: str | None = os.getenv("MONGO_PASSWORD")
-    DATABASE_NAME: str = os.getenv(f"{APP_NAME}_{FASTAPI_ENV}", "fastapi_app")
+    class Config:
+        env_file = ".env"
+        env_file_encofing = "utf-8"
 
-    @property
-    def DATABASE_URL(self):
-        if self.MONGO_USER == "" or self.MONGO_PASSWORD == "":
-            return f"mongodb://{self.MONGO_SERVER}:{self.MONGO_PORT}"
-        return f"mongodb://{self.MONGO_USER}:{self.MONGO_PASSWORD}@{self.MONGO_SERVER}:{self.MONGO_PORT}"
+    @validator("DATABASE_NAME", pre=True, always=True)
+    def set_database_name(cls, v, values):
+        return f"{values['APP_NAME']}_{values['FASTAPI_ENV']}"
+
+    @validator("DATABASE_URL", pre=True, always=True)
+    def set_database_url(cls, v, values):
+        if values["MONGO_USER"] == "" or \
+            values["MONGO_PASSWORD"] == "" or \
+            values["MONGO_USER"] is None or \
+            values["MONGO_PASSWORD"] is None:
+                return f"mongodb://{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
+        return f"mongodb://{values['MONGO_USER']}:{values['MONGO_PASSWORD']}@{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
 
 
 settings = Settings()
