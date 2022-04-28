@@ -26,3 +26,8 @@ class CustomBaseModel(BaseModel):
         json_encoders = {ObjectId: str}
         #   Note that we encode ObjectId, not PyObjectId because
         #   that is how we decode it in validate classmethod
+
+
+class DocumentBaseModel(BaseModel):
+    class Mongo:
+        collection_name: str

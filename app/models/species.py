@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import Field
 from typing import Optional
 
-from .shared import PyObjectId, CustomBaseModel
+from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
 
 #
 # Class naming conventions
@@ -44,9 +44,9 @@ class SpeciesOut(SpeciesBase):
     pass
 
 
-class SpeciesDoc(SpeciesBase):
+class SpeciesDoc(SpeciesBase, DocumentBaseModel):
     class Mongo:
-        collection_name = "species"
+        collection_name: str = "species"
 
 
 SpeciesBase.update_forward_refs()
