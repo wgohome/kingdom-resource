@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     MONGO_PORT: int = 27017
     MONGO_USER: str | None = None
     MONGO_PASSWORD: str | None = None
-    DATABASE_NAME: str | None
     DATABASE_URL: str | None
+    DATABASE_NAME: str = ""
+    TEST_DATABASE_NAME: str = ""
 
     class Config:
         env_file = ".env"
@@ -20,13 +21,19 @@ class Settings(BaseSettings):
     def set_database_name(cls, v, values):
         return f"{values['APP_NAME']}_{values['FASTAPI_ENV']}"
 
+    @validator("TEST_DATABASE_NAME", pre=True, always=True)
+    def set_test_database_name(cls, v, values):
+        return f"{values['APP_NAME']}_test"
+
     @validator("DATABASE_URL", pre=True, always=True)
     def set_database_url(cls, v, values):
-        if values["MONGO_USER"] == "" or \
-            values["MONGO_PASSWORD"] == "" or \
-            values["MONGO_USER"] is None or \
-            values["MONGO_PASSWORD"] is None:
-                return f"mongodb://{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
+        if (
+            values["MONGO_USER"] == "" or
+            values["MONGO_PASSWORD"] == "" or
+            values["MONGO_USER"] is None or
+            values["MONGO_PASSWORD"] is None
+        ):
+            return f"mongodb://{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
         return f"mongodb://{values['MONGO_USER']}:{values['MONGO_PASSWORD']}@{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
 
 
