@@ -107,6 +107,7 @@ def test_duplicate_species_ignored(
         json=two_species_in_w_duplicate
     )
     assert response.status_code == 201
+    assert response.json()[0]["taxid"] == two_species_in_w_duplicate[1]["taxid"]
     # Check that there should be exactly two docs in collection
     response_2 = t_client.get("api/v1/species/")
     assert response_2.status_code == 200
