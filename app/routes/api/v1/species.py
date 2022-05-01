@@ -18,12 +18,15 @@ def get_all_species(db: Database = Depends(get_db)):
     return find_all_species(db)
 
 
-@router.post("/species", status_code=201, response_model=list[SpeciesOut])
+@router.post(
+    "/species",
+    status_code=201,
+    response_model=list[SpeciesOut]
+)
 def post_many_species(
     species_in_list: list[SpeciesIn],
     skip_duplicates: bool = False,
     db: Database = Depends(get_db),
-    response_model=list[SpeciesOut]
 ):
     if skip_duplicates is False:
         enforce_no_existing_species(species_in_list, db)
