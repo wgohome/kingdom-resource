@@ -55,7 +55,14 @@ def insert_many_species(species_in_list: list[SpeciesIn], db: Database):
     except BulkWriteError as e:
         print(f"Only {e.details['nInserted']} / {len(to_insert)} species is newly inserted into the species collection")
         print(f"writeErrors: {e.details['writeErrors']}")
-    return to_insert
+        # Return only newly inserted documents
+        existing_ids = [doc['op']['_id'] for doc in e.details['writeErrors']]
+        to_insert_ids = [doc['_id'] for doc in to_insert]
+        new_ids = list(set(to_insert_ids) - set(existing_ids))
+        pointer = SPECIES_COLL.find({
+            "_id": {"$in": new_ids}
+        })
+        return [SpeciesOut(**doc) for doc in pointer]
 
 
 def find_one_species_by_taxid(taxid: int, db: Database):
