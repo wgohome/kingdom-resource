@@ -19,6 +19,12 @@ def get_db_for_test():
     client.drop_database(settings.TEST_DATABASE_NAME)
 
 
+#
+# NOTE
+# When multiple t_client are called in a single test (via fixtures or otherwise),
+#   they will still be calling on the same test database
+#   because the t_client fixture will only tear down the db at the end of the test
+#
 @pytest.fixture
 def t_client(get_db_for_test):
     app.dependency_overrides[get_db] = get_db_for_test

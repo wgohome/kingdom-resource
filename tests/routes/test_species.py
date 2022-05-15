@@ -1,7 +1,7 @@
 import pytest
 
 #
-# LOCAL FIXTURES
+# LOCAL FIXTURES, to be imported into conftest if to be shared with other test modules
 #
 
 
@@ -44,6 +44,7 @@ def one_species_inserted(species_in_valid, t_client):
         json=species_in_valid
     )
     assert response.status_code == 201
+    return response.json()
 
 
 #

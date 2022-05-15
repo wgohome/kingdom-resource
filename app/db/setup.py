@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pymongo import ASCENDING, MongoClient
+from app.models.genes import GeneDoc
 from app.models.species import SpeciesDoc
 
 from config import settings
@@ -8,6 +9,11 @@ from config import settings
 def setup_indexes(db):
     db[SpeciesDoc.Mongo.collection_name].create_index(
         [("tax", ASCENDING)],
+        unique=True,
+        name="unique_taxids"
+    )
+    db[GeneDoc.Mongo.collection_name].create_index(
+        [("label", ASCENDING)],
         unique=True,
         name="unique_taxids"
     )
