@@ -3,19 +3,14 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
-from pydantic.main import ModelMetaclass
 
+from app.db.setup import get_collection
 from app.models.genes import GeneDoc, GeneIn, GeneOut, GeneProcessed
-
-
-@lru_cache
-def __get_collection(model: ModelMetaclass, db: Database):
-    assert hasattr(model, "Mongo"),  f"{model.__name__} should inherit from DocumentBaseModel"
-    return db[model.Mongo.collection_name]
+from app.models.species import SpeciesDoc
 
 
 def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOut]:
-    GENES_COLL = __get_collection(GeneDoc, db)
+    GENES_COLL = get_collection(GeneDoc, db)
     return [
         GeneOut(**gene_dict)
         for gene_dict in GENES_COLL.find({"spe_id": species_id})
@@ -23,7 +18,7 @@ def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOu
 
 
 def enforce_no_existing_genes(genes_in: list[GeneIn], db: Database) -> None:
-    GENES_COLL = __get_collection(GeneDoc, db)
+    GENES_COLL = get_collection(GeneDoc, db)
     labels_present = [doc["label"] for doc in GENES_COLL.find({}, {"_id": 0, "label": 1})]
     labels_new = [gene.label for gene in genes_in]
     overlaps = set(labels_new) & set(labels_present)
@@ -51,7 +46,7 @@ def insert_many_genes(
     # before passing to this function.
     # This is validated by the GeneProcessed Pydantic model.
     #
-    GENES_COLL = __get_collection(GeneDoc, db)
+    GENES_COLL = get_collection(GeneDoc, db)
     to_insert = [gene.dict(exclude_none=True) for gene in genes_processed]
     try:
         result = GENES_COLL.insert_many(
@@ -73,3 +68,4 @@ def insert_many_genes(
             "_id": {"$in": new_ids}
         })
         return [GeneOut(**doc) for doc in pointer]
+

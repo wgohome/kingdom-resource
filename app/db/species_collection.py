@@ -2,21 +2,14 @@ from functools import lru_cache
 from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo.database import Database
-from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
-from pydantic.main import ModelMetaclass
 
+from app.db.setup import get_collection
 from app.models.species import SpeciesDoc, SpeciesIn, SpeciesOut
 
 
-@lru_cache
-def __get_collection(model: ModelMetaclass, db: Database) -> Collection:
-    assert hasattr(model, "Mongo"), f"{model.__name__} should inherit from DocumentBaseModel"
-    return db[model.Mongo.collection_name]  # type: ignore
-
-
 def find_all_species(db: Database) -> list[SpeciesOut]:
-    SPECIES_COLL = __get_collection(SpeciesDoc, db)
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
     return [
         SpeciesOut(**species_dict)
         for species_dict in SPECIES_COLL.find()
@@ -24,7 +17,7 @@ def find_all_species(db: Database) -> list[SpeciesOut]:
 
 
 def enforce_no_existing_species(species_in_list: list[SpeciesIn], db: Database) -> None:
-    SPECIES_COLL = __get_collection(SpeciesDoc, db)
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
     taxids_present = [doc["tax"] for doc in SPECIES_COLL.find({}, {"_id": 0, "tax": 1})]
     taxids_new = [sp.tax for sp in species_in_list]
     overlaps = set(taxids_new) & set(taxids_present)
@@ -43,7 +36,7 @@ def enforce_no_existing_species(species_in_list: list[SpeciesIn], db: Database) 
 
 
 def insert_many_species(species_in_list: list[SpeciesIn], db: Database) -> list[SpeciesOut]:
-    SPECIES_COLL = __get_collection(SpeciesDoc, db)
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
     to_insert = [sp_in.dict(exclude_none=True) for sp_in in species_in_list]
     try:
         result = SPECIES_COLL.insert_many(
@@ -68,7 +61,7 @@ def insert_many_species(species_in_list: list[SpeciesIn], db: Database) -> list[
 
 
 def find_one_species_by_taxid(taxid: int, db: Database) -> SpeciesOut:
-    SPECIES_COLL = __get_collection(SpeciesDoc, db)
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
     species_dict = SPECIES_COLL.find_one({
         "tax": taxid
     })
@@ -88,7 +81,7 @@ def find_one_species_by_taxid(taxid: int, db: Database) -> SpeciesOut:
 
 
 def find_species_id_from_taxid(taxid: int, db: Database) -> ObjectId:
-    SPECIES_COLL = __get_collection(SpeciesDoc, db)
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
     species_dict = SPECIES_COLL.find_one(
         {"tax": taxid},
         {"_id": 1}
