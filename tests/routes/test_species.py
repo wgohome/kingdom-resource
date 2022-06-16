@@ -52,6 +52,17 @@ def one_species_inserted(species_in_valid, t_client):
 #
 
 
+def test_get_one_species(one_species_inserted, t_client):
+    response = t_client.get("/api/v1/species/3702")
+    assert response.status_code == 200
+    assert response.json()["taxid"] == 3702
+
+
+def test_get_one_species_not_found(one_species_inserted, t_client):
+    response = t_client.get("/api/v1/species/101010")
+    assert response.status_code == 404
+
+
 def test_get_many_species_empty(t_client):
     response = t_client.get("/api/v1/species")
     assert response.status_code == 200
@@ -113,9 +124,3 @@ def test_duplicate_species_ignored(
     response_2 = t_client.get("api/v1/species/")
     assert response_2.status_code == 200
     assert len(response_2.json()) == 2
-
-
-def test_get_one_species(one_species_inserted, t_client):
-    response = t_client.get("/api/v1/species/3702")
-    assert response.status_code == 200
-    assert response.json()["taxid"] == 3702

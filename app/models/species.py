@@ -24,8 +24,8 @@ class QcStat(CustomBaseModel):
 
 
 class SpeciesBase(CustomBaseModel):
-    id: PyObjectId | None = Field(alias="_id")
     tax: int = Field(alias="taxid")
+    #   taxid indexed for search by taxid
     name: str
     alias: list[str] = list()  # Must be a factory for mutable objects
     cds: "Cds"
@@ -41,10 +41,12 @@ class SpeciesIn(SpeciesBase):
 
 
 class SpeciesOut(SpeciesBase):
-    pass
+    id: PyObjectId | None = Field(alias="_id")
 
 
 class SpeciesDoc(SpeciesBase, DocumentBaseModel):
+    id: PyObjectId | None = Field(alias="_id")
+
     class Mongo:
         collection_name: str = "species"
 

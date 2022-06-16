@@ -6,7 +6,6 @@ from app.db.setup import get_db
 from app.db.genes_collection import (
     find_all_genes_by_species,
     enforce_no_existing_genes,
-    enforce_no_existing_genes,
     insert_many_genes,
 )
 from app.db.species_collection import (

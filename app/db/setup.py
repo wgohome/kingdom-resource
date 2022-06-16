@@ -1,3 +1,4 @@
+from enum import unique
 from functools import lru_cache
 from pydantic.main import ModelMetaclass
 from pymongo import ASCENDING, MongoClient
@@ -5,25 +6,40 @@ from pymongo.database import Database
 from pymongo.collection import Collection
 
 from app.models.genes import GeneDoc
+from app.models.sample_annotation import SampleAnnotationDoc
 from app.models.species import SpeciesDoc
 from config import settings
 
 
 def setup_indexes(db):
     # To search species by their taxid
+    # and enforce unique taxids
     db[SpeciesDoc.Mongo.collection_name].create_index(
         [("tax", ASCENDING)],
         unique=True,
         name="unique_taxids"
     )
     # To search gene by their gene label
+    # TODO: search by gene id + label too, can index both?
     db[GeneDoc.Mongo.collection_name].create_index(
         [("label", ASCENDING)],
         unique=True,
         name="unique_gene_labels"
     )
     # To search sample annotations by type + label, gene
+    db[SampleAnnotationDoc.Mongo.collection_name].create_index(
+        [
+            ("spe_id", ASCENDING),
+            ("g_id", ASCENDING),
+            ("type", ASCENDING),
+            ("lbl", ASCENDING),
+        ],
+        unique=True,
+        name="unique_sample_annotation_doc"
+    )
     # TODO
+    # test if the unique constraint working
+    # see if need more index for searching by species and gene
 
 
 @lru_cache

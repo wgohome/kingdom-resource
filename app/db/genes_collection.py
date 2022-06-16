@@ -1,4 +1,3 @@
-from functools import lru_cache
 from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo.database import Database
@@ -6,7 +5,6 @@ from pymongo.errors import BulkWriteError
 
 from app.db.setup import get_collection
 from app.models.genes import GeneDoc, GeneIn, GeneOut, GeneProcessed
-from app.models.species import SpeciesDoc
 
 
 def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOut]:
@@ -19,6 +17,7 @@ def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOu
 
 def enforce_no_existing_genes(genes_in: list[GeneIn], db: Database) -> None:
     GENES_COLL = get_collection(GeneDoc, db)
+    # TODO: only scope uniqueness within species
     labels_present = [doc["label"] for doc in GENES_COLL.find({}, {"_id": 0, "label": 1})]
     labels_new = [gene.label for gene in genes_in]
     overlaps = set(labels_new) & set(labels_present)
@@ -69,3 +68,23 @@ def insert_many_genes(
         })
         return [GeneOut(**doc) for doc in pointer]
 
+
+def find_gene_id_from_label(species_id: ObjectId, gene_label: str, db: Database):
+    GENE_COLL = get_collection(GeneDoc, db)
+    gene_dict = GENE_COLL.find_one(
+        {"spe_id": species_id, "label": gene_label},
+        {"_id": 1}
+    )
+    if gene_dict is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "gene_label": gene_label,
+                "description": f"gene of identifier label {gene_label} not found",
+                "recommendations": [
+                    "Ensure gene label is the main gene identifier label and not their alias",
+                    "If gene has not been inserted into database, insert genes into the DB via the post_many_genes_by_species POST request endpoint",
+                ],
+            }
+        )
+    return gene_dict["_id"]

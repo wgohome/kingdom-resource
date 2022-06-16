@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None
     DATABASE_NAME: str = ""
     TEST_DATABASE_NAME: str = ""
+    N_DECIMALS: int = 3
 
     class Config:
         env_file = ".env"
