@@ -34,11 +34,7 @@ class SpeciesIn(CustomBaseModel):
 
 class SpeciesBase(SpeciesIn):
     id: PyObjectId | None = Field(alias="_id")
-    # n genes and samples should not be set by user
-    # but is updated when genes and samples are uploaded
-    n_genes: int = Field(default=0, ge=0)
-    n_samples: int = Field(default=0, ge=0)
-    # timestamps should not be set by user too
+    # timestamps should not be set by user
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
