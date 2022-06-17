@@ -5,7 +5,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from app.db.setup import get_collection
-from app.models.species import SpeciesDoc, SpeciesIn, SpeciesOut
+from app.models.species import SpeciesBase, SpeciesDoc, SpeciesIn, SpeciesOut
 
 
 def find_all_species(db: Database) -> list[SpeciesOut]:
@@ -37,7 +37,10 @@ def enforce_no_existing_species(species_in_list: list[SpeciesIn], db: Database) 
 
 def insert_many_species(species_in_list: list[SpeciesIn], db: Database) -> list[SpeciesOut]:
     SPECIES_COLL = get_collection(SpeciesDoc, db)
-    to_insert = [sp_in.dict(exclude_none=True) for sp_in in species_in_list]
+    to_insert = [
+        SpeciesBase(**sp_in.dict(exclude_none=True)).dict(exclude_none=True)
+        for sp_in in species_in_list
+    ]
     try:
         result = SPECIES_COLL.insert_many(
             to_insert,

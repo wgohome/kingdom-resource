@@ -6,9 +6,9 @@ from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
 
 #
 # Class naming conventions
+#   SpeciesIn: attributes for data expected in API endpoint
 #   SpeciesBase: the base attributes, as parent class to be inherited
 #   SpeciesDoc: attributes matching document schema in DB
-#   SpeciesIn: attributes for new object instantiation
 #   SpeciesOut: attributes for returning objects as payload
 #
 
@@ -23,30 +23,31 @@ class QcStat(CustomBaseModel):
     palgn: int = Field(0, alias="p_pseudoaligned", ge=0, le=100)
 
 
-class SpeciesBase(CustomBaseModel):
+class SpeciesIn(CustomBaseModel):
     tax: int = Field(alias="taxid")
     #   taxid indexed for search by taxid
     name: str
     alias: list[str] = list()  # Must be a factory for mutable objects
     cds: "Cds"
     qc_stat: QcStat = Field(default_factory=QcStat)
+
+
+class SpeciesBase(SpeciesIn):
+    id: PyObjectId | None = Field(alias="_id")
+    # n genes and samples should not be set by user
+    # but is updated when genes and samples are uploaded
     n_genes: int = Field(default=0, ge=0)
     n_samples: int = Field(default=0, ge=0)
+    # timestamps should not be set by user too
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
-class SpeciesIn(SpeciesBase):
+class SpeciesOut(SpeciesBase):
     pass
 
 
-class SpeciesOut(SpeciesBase):
-    id: PyObjectId | None = Field(alias="_id")
-
-
 class SpeciesDoc(SpeciesBase, DocumentBaseModel):
-    id: PyObjectId | None = Field(alias="_id")
-
     class Mongo:
         collection_name: str = "species"
 
