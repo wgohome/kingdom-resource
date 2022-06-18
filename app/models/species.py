@@ -31,6 +31,16 @@ class SpeciesIn(CustomBaseModel):
     cds: "Cds"
 
 
+class SpeciesUpdateIn(CustomBaseModel):
+    name: str | None
+    alias: list[str] | None
+    cds: Cds | None
+
+
+class SpeciesUpdate(SpeciesUpdateIn):
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
 class SpeciesBase(SpeciesIn):
     id: PyObjectId | None = Field(alias="_id")
     # QC stats should not be set on species creation, but on uploading TPM

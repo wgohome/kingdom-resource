@@ -1,9 +1,8 @@
-from functools import lru_cache
 from bson import ObjectId
 from fastapi import HTTPException, status
+from pymongo import ReturnDocument
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
-from requests import delete
 
 from app.db.setup import get_collection
 from app.models.species import (
@@ -11,6 +10,7 @@ from app.models.species import (
     SpeciesDoc,
     SpeciesIn,
     SpeciesOut,
+    SpeciesUpdate,
 )
 
 
@@ -129,3 +129,13 @@ def delete_one_species(taxid: int, db: Database) -> SpeciesOut:
             }
         )
     return SpeciesOut(**deleted)
+
+
+def update_one_species(species_id: ObjectId, updates: SpeciesUpdate, db: Database) -> SpeciesOut:
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
+    updated = SPECIES_COLL.find_one_and_update(
+        {"_id": species_id},
+        {"$set": updates.dict(exclude_unset=True)},
+        return_document=ReturnDocument.AFTER
+    )
+    return SpeciesOut(**updated)
