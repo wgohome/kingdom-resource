@@ -3,6 +3,7 @@ from pymongo.database import Database
 
 from app.db.setup import get_db
 from app.db.species_collection import (
+    delete_one_species,
     find_all_species,
     insert_many_species,
     find_one_species_by_taxid,
@@ -16,6 +17,11 @@ router = APIRouter(prefix="/api/v1", tags=["species"])
 @router.get("/species", response_model=list[SpeciesOut])
 def get_all_species(db: Database = Depends(get_db)):
     return find_all_species(db)
+
+
+@router.get("/species/{taxid}", response_model=SpeciesOut)
+def get_one_species_by_taxid(taxid: int, db: Database = Depends(get_db)):
+    return find_one_species_by_taxid(taxid, db)
 
 
 @router.post(
@@ -34,6 +40,7 @@ def post_many_species(
     return inserted_species
 
 
-@router.get("/species/{taxid}", response_model=SpeciesOut)
-def get_one_species_by_taxid(taxid: int, db: Database = Depends(get_db)):
-    return find_one_species_by_taxid(taxid, db)
+@router.delete("/species/{taxid}", status_code=200, response_model=SpeciesOut)
+def delete_species(taxid: int, db: Database = Depends(get_db)):
+    # TODO delete associated resources
+    return delete_one_species(taxid, db)

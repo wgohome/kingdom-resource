@@ -3,9 +3,15 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
+from requests import delete
 
 from app.db.setup import get_collection
-from app.models.species import SpeciesBase, SpeciesDoc, SpeciesIn, SpeciesOut
+from app.models.species import (
+    SpeciesBase,
+    SpeciesDoc,
+    SpeciesIn,
+    SpeciesOut,
+)
 
 
 def find_all_species(db: Database) -> list[SpeciesOut]:
@@ -102,3 +108,24 @@ def find_species_id_from_taxid(taxid: int, db: Database) -> ObjectId:
             }
         )
     return species_dict["_id"]
+
+
+def delete_one_species(taxid: int, db: Database) -> SpeciesOut:
+    SPECIES_COLL = get_collection(SpeciesDoc, db)
+    deleted = SPECIES_COLL.find_one_and_delete(
+        {"tax": taxid},
+        {"_id": 0}
+    )
+    if deleted is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "taxid": taxid,
+                "description": f"species of taxid {taxid} not found",
+                "recommendations": [
+                    "Ensure taxid given in url is correct",
+                    "Insert species into the DB via the species POST request endpoint"
+                ],
+            }
+        )
+    return SpeciesOut(**deleted)
