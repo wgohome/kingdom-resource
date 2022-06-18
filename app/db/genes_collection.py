@@ -3,7 +3,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from app.db.setup import get_collection
-from app.models.genes import GeneDoc, GeneIn, GeneOut, GeneProcessed
+from app.models.gene import GeneDoc, GeneIn, GeneOut, GeneProcessed
 from app.models.shared import PyObjectId
 from config import settings
 

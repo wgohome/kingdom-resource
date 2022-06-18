@@ -11,7 +11,7 @@ from app.db.genes_collection import (
 from app.db.species_collection import (
     find_species_id_from_taxid,
 )
-from app.models.genes import GeneOut, GeneIn, GeneProcessed
+from app.models.gene import GeneOut, GeneIn, GeneProcessed
 from app.models.shared import PyObjectId
 
 router = APIRouter(prefix="/api/v1", tags=["genes"])

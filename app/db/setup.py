@@ -5,7 +5,7 @@ from pymongo import ASCENDING, MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 
-from app.models.genes import GeneDoc
+from app.models.gene import GeneDoc
 from app.models.sample_annotation import SampleAnnotationDoc
 from app.models.species import SpeciesDoc
 from config import settings

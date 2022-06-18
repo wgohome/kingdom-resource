@@ -1,4 +1,3 @@
-from bson import ObjectId
 from pydantic import Field
 
 from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
