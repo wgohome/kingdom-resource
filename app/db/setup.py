@@ -12,6 +12,7 @@ from config import settings
 
 
 def setup_indexes(db):
+    #
     # To search species by their taxid
     # and enforce unique taxids
     db[SpeciesDoc.Mongo.collection_name].create_index(
@@ -19,13 +20,15 @@ def setup_indexes(db):
         unique=True,
         name="unique_taxids"
     )
-    # To search gene by their gene label
-    # TODO: search by gene id + label too, can index both?
+    #
+    # To search gene by their species and/or gene label
+    # and enforce unique gene labels within each species scope
     db[GeneDoc.Mongo.collection_name].create_index(
-        [("label", ASCENDING)],
+        [("spe_id", ASCENDING), ("label", ASCENDING)],
         unique=True,
-        name="unique_gene_labels"
+        name="unique_species_gene_labels"
     )
+    #
     # To search sample annotations by type + label, gene
     db[SampleAnnotationDoc.Mongo.collection_name].create_index(
         [

@@ -16,6 +16,7 @@ from app.models.genes import GeneOut, GeneIn, GeneProcessed
 router = APIRouter(prefix="/api/v1", tags=["genes"])
 
 
+# TODO to paginate results!
 @router.get(
     "/species/{taxid}/genes",
     response_model=list[GeneOut]
@@ -36,9 +37,9 @@ def post_many_genes_by_species(
     skip_duplicates: bool = False,
     db: Database = Depends(get_db)
 ):
-    if skip_duplicates is False:
-        enforce_no_existing_genes(genes_in, db)
     species_id: ObjectId = find_species_id_from_taxid(taxid, db)
+    if skip_duplicates is False:
+        enforce_no_existing_genes(species_id, genes_in, db)
     genes_processed: list[GeneProcessed] = [
         GeneProcessed(
             **gene_in.dict(by_alias=True, exclude_none=True),

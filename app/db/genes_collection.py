@@ -15,22 +15,29 @@ def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOu
     ]
 
 
-def enforce_no_existing_genes(genes_in: list[GeneIn], db: Database) -> None:
+def enforce_no_existing_genes(species_id: ObjectId, genes_in: list[GeneIn], db: Database) -> None:
+    # Uniqueness is enforced within the scope of the species only
     GENES_COLL = get_collection(GeneDoc, db)
-    # TODO: only scope uniqueness within species
-    labels_present = [doc["label"] for doc in GENES_COLL.find({}, {"_id": 0, "label": 1})]
+    labels_present = [
+        doc["label"]
+        for doc in GENES_COLL.find(
+            {"spe_id": species_id},
+            {"_id": 0, "label": 1}
+        )
+    ]
     labels_new = [gene.label for gene in genes_in]
     overlaps = set(labels_new) & set(labels_present)
     if len(overlaps) > 0:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
-                "description": "Some gene labels (identifiers) already exist in the DB. Gene labels must be unique",
+                "description": "Some gene labels (identifiers) already exist in the DB. Under each species, gene labels must be unique",
                 "gene_labels": list(overlaps),
                 "recommendations": [
                     "To ignore existing gene labels and insert only new gene labels, add `skip_duplicates=True` to the query parameters.",
                     "To replace existing gene labels, delete the current gene document before inserting the new one.",
-                    "If gene label indeed clash with other species, consdier prefixing the label with species identifier"
+                    "Check that you are inserting genes into the correct species",
+                    "If gene has isoforms, consider suffixing the label"
                 ]
             }
         )
