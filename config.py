@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None
     DATABASE_NAME: str = ""
     TEST_DATABASE_NAME: str = ""
+
+    # Constants
     N_DECIMALS: int = 3
+    PAGE_SIZE: int = 10
 
     class Config:
         env_file = ".env"

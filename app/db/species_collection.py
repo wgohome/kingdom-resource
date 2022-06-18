@@ -1,10 +1,10 @@
-from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo import ReturnDocument
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from app.db.setup import get_collection
+from app.models.shared import PyObjectId
 from app.models.species import (
     SpeciesBase,
     SpeciesDoc,
@@ -89,7 +89,7 @@ def find_one_species_by_taxid(taxid: int, db: Database) -> SpeciesOut:
     return species_dict
 
 
-def find_species_id_from_taxid(taxid: int, db: Database) -> ObjectId:
+def find_species_id_from_taxid(taxid: int, db: Database) -> PyObjectId:
     SPECIES_COLL = get_collection(SpeciesDoc, db)
     species_dict = SPECIES_COLL.find_one(
         {"tax": taxid},
@@ -107,7 +107,7 @@ def find_species_id_from_taxid(taxid: int, db: Database) -> ObjectId:
                 ],
             }
         )
-    return species_dict["_id"]
+    return PyObjectId(species_dict["_id"])
 
 
 def delete_one_species(taxid: int, db: Database) -> SpeciesOut:
@@ -131,7 +131,7 @@ def delete_one_species(taxid: int, db: Database) -> SpeciesOut:
     return SpeciesOut(**deleted)
 
 
-def update_one_species(species_id: ObjectId, updates: SpeciesUpdate, db: Database) -> SpeciesOut:
+def update_one_species(species_id: PyObjectId, updates: SpeciesUpdate, db: Database) -> SpeciesOut:
     SPECIES_COLL = get_collection(SpeciesDoc, db)
     updated = SPECIES_COLL.find_one_and_update(
         {"_id": species_id},

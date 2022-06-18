@@ -1,21 +1,26 @@
-from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from app.db.setup import get_collection
 from app.models.genes import GeneDoc, GeneIn, GeneOut, GeneProcessed
+from app.models.shared import PyObjectId
+from config import settings
 
 
-def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOut]:
+def find_all_genes_by_species(
+    species_id: PyObjectId, page_num: int, db: Database
+) -> list[GeneOut]:
     GENES_COLL = get_collection(GeneDoc, db)
     return [
         GeneOut(**gene_dict)
-        for gene_dict in GENES_COLL.find({"spe_id": species_id})
+        for gene_dict in GENES_COLL.find(
+            {"spe_id": species_id}
+        ).skip((page_num - 1) * settings.PAGE_SIZE).limit(settings.PAGE_SIZE)
     ]
 
 
-def find_gene_id_from_label(species_id: ObjectId, gene_label: str, db: Database) -> ObjectId:
+def find_gene_id_from_label(species_id: PyObjectId, gene_label: str, db: Database) -> PyObjectId:
     GENE_COLL = get_collection(GeneDoc, db)
     gene_dict = GENE_COLL.find_one(
         {"spe_id": species_id, "label": gene_label},
@@ -33,10 +38,10 @@ def find_gene_id_from_label(species_id: ObjectId, gene_label: str, db: Database)
                 ],
             }
         )
-    return gene_dict["_id"]
+    return PyObjectId(gene_dict["_id"])
 
 
-def find_one_gene_by_label(species_id: ObjectId, gene_label: str, db: Database):
+def find_one_gene_by_label(species_id: PyObjectId, gene_label: str, db: Database) -> GeneOut:
     GENE_COLL = get_collection(GeneDoc, db)
     gene_dict = GENE_COLL.find_one(
         {"spe_id": species_id, "label": gene_label}
@@ -56,7 +61,7 @@ def find_one_gene_by_label(species_id: ObjectId, gene_label: str, db: Database):
     return GeneOut(**gene_dict)
 
 
-def enforce_no_existing_genes(species_id: ObjectId, genes_in: list[GeneIn], db: Database) -> None:
+def enforce_no_existing_genes(species_id: PyObjectId, genes_in: list[GeneIn], db: Database) -> None:
     # Uniqueness is enforced within the scope of the species only
     GENES_COLL = get_collection(GeneDoc, db)
     labels_present = [
