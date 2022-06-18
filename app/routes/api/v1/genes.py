@@ -6,6 +6,7 @@ from app.db.setup import get_db
 from app.db.genes_collection import (
     find_all_genes_by_species,
     enforce_no_existing_genes,
+    find_one_gene_by_label,
     insert_many_genes,
 )
 from app.db.species_collection import (
@@ -24,6 +25,15 @@ router = APIRouter(prefix="/api/v1", tags=["genes"])
 def get_all_genes_of_a_species(taxid: int, db: Database = Depends(get_db)):
     species_id: ObjectId = find_species_id_from_taxid(taxid, db)
     return find_all_genes_by_species(species_id, db)
+
+
+@router.get(
+    "/species/{taxid}/gene/{gene_label}",
+    response_model=GeneOut
+)
+def get_one_gene(taxid: int, gene_label: str, db: Database = Depends(get_db)):
+    species_id: ObjectId = find_species_id_from_taxid(taxid, db)
+    return find_one_gene_by_label(species_id, gene_label, db)
 
 
 @router.post(

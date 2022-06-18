@@ -15,6 +15,47 @@ def find_all_genes_by_species(species_id: ObjectId, db: Database) -> list[GeneOu
     ]
 
 
+def find_gene_id_from_label(species_id: ObjectId, gene_label: str, db: Database) -> ObjectId:
+    GENE_COLL = get_collection(GeneDoc, db)
+    gene_dict = GENE_COLL.find_one(
+        {"spe_id": species_id, "label": gene_label},
+        {"_id": 1}
+    )
+    if gene_dict is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "gene_label": gene_label,
+                "description": f"gene of identifier label {gene_label} not found",
+                "recommendations": [
+                    "Ensure gene label is the main gene identifier label and not their alias",
+                    "If gene has not been inserted into database, insert genes into the DB via the post_many_genes_by_species POST request endpoint",
+                ],
+            }
+        )
+    return gene_dict["_id"]
+
+
+def find_one_gene_by_label(species_id: ObjectId, gene_label: str, db: Database):
+    GENE_COLL = get_collection(GeneDoc, db)
+    gene_dict = GENE_COLL.find_one(
+        {"spe_id": species_id, "label": gene_label}
+    )
+    if gene_dict is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "gene_label": gene_label,
+                "description": f"gene of identifier label {gene_label} not found",
+                "recommendations": [
+                    "Ensure gene label is the main gene identifier label and not their alias",
+                    "If gene has not been inserted into database, insert genes into the DB via the post_many_genes_by_species POST request endpoint",
+                ],
+            }
+        )
+    return GeneOut(**gene_dict)
+
+
 def enforce_no_existing_genes(species_id: ObjectId, genes_in: list[GeneIn], db: Database) -> None:
     # Uniqueness is enforced within the scope of the species only
     GENES_COLL = get_collection(GeneDoc, db)
@@ -74,24 +115,3 @@ def insert_many_genes(
             "_id": {"$in": new_ids}
         })
         return [GeneOut(**doc) for doc in pointer]
-
-
-def find_gene_id_from_label(species_id: ObjectId, gene_label: str, db: Database):
-    GENE_COLL = get_collection(GeneDoc, db)
-    gene_dict = GENE_COLL.find_one(
-        {"spe_id": species_id, "label": gene_label},
-        {"_id": 1}
-    )
-    if gene_dict is None:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "gene_label": gene_label,
-                "description": f"gene of identifier label {gene_label} not found",
-                "recommendations": [
-                    "Ensure gene label is the main gene identifier label and not their alias",
-                    "If gene has not been inserted into database, insert genes into the DB via the post_many_genes_by_species POST request endpoint",
-                ],
-            }
-        )
-    return gene_dict["_id"]
