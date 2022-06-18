@@ -29,11 +29,12 @@ class SpeciesIn(CustomBaseModel):
     name: str
     alias: list[str] = list()  # Must be a factory for mutable objects
     cds: "Cds"
-    qc_stat: QcStat = Field(default_factory=QcStat)
 
 
 class SpeciesBase(SpeciesIn):
     id: PyObjectId | None = Field(alias="_id")
+    # QC stats should not be set on species creation, but on uploading TPM
+    qc_stat: QcStat = Field(default_factory=QcStat)
     # timestamps should not be set by user
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
