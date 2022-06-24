@@ -2,7 +2,7 @@ from pydantic import BaseSettings, validator
 
 
 class Settings(BaseSettings):
-    TITLE: str = "Kingdomwide Gene Expression Database"
+    TITLE: str = "Kingdomwide Gene Expression Omnibus"
     APP_NAME: str = "default_app"
     FASTAPI_ENV: str = "dev"
     MONGO_SERVER: str = "localhost"

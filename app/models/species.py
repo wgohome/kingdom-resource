@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import Field
 from typing import Optional
 
-from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
+from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseModel
 
 #
 # Class naming conventions
@@ -52,6 +52,10 @@ class SpeciesBase(SpeciesIn):
 
 class SpeciesOut(SpeciesBase):
     pass
+
+
+class SpeciesPage(BasePageModel):
+    payload: list[SpeciesOut]
 
 
 class SpeciesDoc(SpeciesBase, DocumentBaseModel):
