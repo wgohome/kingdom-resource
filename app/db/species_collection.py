@@ -1,6 +1,7 @@
+import math
 from fastapi import HTTPException, status
+from pymongo import ReturnDocument
 # from pydantic import ValidationError
-from pymongo import ReplaceOne, ReturnDocument
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
@@ -26,7 +27,7 @@ def find_all_species(page_num: int, db: Database) -> SpeciesPage:
         .limit(settings.PAGE_SIZE)
     ]
     return SpeciesPage(
-        page_total=SPECIES_COLL.estimated_document_count(),
+        page_total=math.ceil(SPECIES_COLL.estimated_document_count() / settings.PAGE_SIZE),
         curr_page=page_num,
         payload=species_docs
     )
@@ -89,7 +90,7 @@ def insert_or_replace_many_species(species_in_list: list[SpeciesIn], db: Databas
     for sp_in in species_in_list:
         sp_doc = SpeciesDoc(**sp_in.dict_for_db())
         to_write = sp_doc.dict_for_db()
-        result = SPECIES_COLL.replace_one(
+        _ = SPECIES_COLL.replace_one(
             {"tax": sp_doc.tax},
             to_write,
             upsert=True

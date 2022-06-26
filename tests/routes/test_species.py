@@ -1,5 +1,8 @@
+import math
 from fastapi import status
 import pytest
+
+from config import settings
 
 #
 # LOCAL FIXTURES
@@ -63,10 +66,37 @@ def two_species_list_duplicated(one_species_list) -> list[dict]:
 
 
 @pytest.fixture
+def twenty_one_species_list() -> list[dict]:
+    species_list = [
+        {
+            "taxid": 9000 + i,
+            "name": f"Species name for {9000 + i}",
+            "alias": [f"alias {i}"],
+            "cds": {
+                "source": "Ensembl",
+                "url": f"https://www.cds.net/spp/{9000 + i}"
+            }
+        }
+        for i in range(1, 22)
+    ]
+    return species_list
+
+
+@pytest.fixture
 def one_species_inserted(one_species_list, t_client):
     response = t_client.post(
         "/api/v1/species",
         json=one_species_list[0]
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    return response.json()
+
+
+@pytest.fixture
+def twenty_one_species_inserted(twenty_one_species_list, t_client):
+    response = t_client.post(
+        "/api/v1/species/batch",
+        json=twenty_one_species_list
     )
     assert response.status_code == status.HTTP_201_CREATED
     return response.json()
@@ -124,7 +154,23 @@ def test_get_many_species_not_empty(one_species_inserted, t_client):
     assert res_dict["page_total"] == 1
 
 
-# TODO: test_get_many_species_next_pages
+def test_get_many_species_w_pages(twenty_one_species_inserted, t_client):
+    # Test second page full
+    response = t_client.get("/api/v1/species?page_num=2")
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["payload"]) == settings.PAGE_SIZE
+    # Test page total correct
+    last_page = response.json()["page_total"]
+    assert last_page == math.ceil(len(twenty_one_species_inserted) / settings.PAGE_SIZE)
+    # TODO Test page negative error
+    # Test last page one doc only
+    response = t_client.get(f"/api/v1/species?page_num={last_page}")
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["payload"]) != 0
+    # Test fourth page empty
+    response = t_client.get(f"/api/v1/species?page_num={last_page + 1}")
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["payload"]) == 0
 
 
 def test_delete_one_species(one_species_inserted, t_client):
@@ -153,7 +199,26 @@ def test_patch_one_species(one_species_inserted, t_client):
     assert response.json()["name"] == to_update["name"]
 
 
-# TODO: test cannot update some fields in species doc directly (via PATCH)
+def test_patch_one_species_unauthorized_field(one_species_inserted, t_client):
+    # Cannot update some restricted fields in species doc directly (via PATCH)
+    taxid: int = one_species_inserted["taxid"]
+    to_update = {
+        "name": "new species name",
+        "alias": ["new species alias"],
+        "cds": {
+            "source": "New source",
+            "url": "https://newurl.com"
+        },
+        "qc_stat": {
+            "log_processed": 1,
+            "p_pseudoaligned": 2
+        }
+    }
+    response = t_client.patch(
+        f"/api/v1/species/{taxid}",
+        json=to_update
+    )
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_post_many_species_all_valid(two_species_list, t_client):
@@ -162,7 +227,7 @@ def test_post_many_species_all_valid(two_species_list, t_client):
         "/api/v1/species/batch",
         json=two_species_list
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()[0]["taxid"] == two_species_list[0]["taxid"]
     # Default values are set correctly
     assert response.json()[0]["qc_stat"]["log_processed"] == 0
@@ -181,13 +246,13 @@ def test_any_duplicate_species_invalid(
         "/api/v1/species/batch",
         json=two_species_list_duplicated
     )
-    assert response.status_code == 409
-    # Ensure that the new species is also not inserted into DB
+    assert response.status_code == status.HTTP_409_CONFLICT
+    # Ensure that the none of the new species is also not inserted into DB
     new_taxid = two_species_list_duplicated[1]["taxid"]
     response_2 = t_client.get(
         f"/api/v1/species/{new_taxid}"
     )
-    assert response_2.status_code == 404
+    assert response_2.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_duplicate_species_ignored(
@@ -199,11 +264,30 @@ def test_duplicate_species_ignored(
         "/api/v1/species/batch?skip_duplicates=true",
         json=two_species_list_duplicated
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()[0]["taxid"] == two_species_list_duplicated[1]["taxid"]
     # Check that there should be exactly two docs in collection, not three
     response_2 = t_client.get("api/v1/species")
-    assert response_2.status_code == 200
+    assert response_2.status_code == status.HTTP_200_OK
     assert len(response_2.json()["payload"]) == 2
 
-# TODO: test_put_replace_species
+
+def test_put_replace_species(twenty_one_species_inserted, one_species_list, t_client):
+    # Replaces existing document -> for fields not defined in update,
+    #   even if old doc has the field, will be replaced by default values set
+    #
+    to_replace = twenty_one_species_inserted[0]
+    to_replace["name"] = to_replace["name"] + "_modified"
+    to_replace.pop("_id")
+    to_replace.pop("qc_stat")
+    to_replace.pop("created_at")
+    to_replace.pop("updated_at")
+    response = t_client.put(
+        "/api/v1/species/batch",
+        json=one_species_list + [to_replace]
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response = t_client.get(f"/api/v1/species/{to_replace['taxid']}")
+    assert response.status_code == status.HTTP_200_OK
+    assert "modified" in response.json()["name"]
+    assert response.json()["qc_stat"] == {"log_processed": 0, "p_pseudoaligned": 0}

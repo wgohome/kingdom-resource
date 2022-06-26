@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
+from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseModel
 
 #
 # Class naming conventions
@@ -28,11 +28,14 @@ class GeneProcessed(GeneIn):
 
 class GeneBase(GeneProcessed):
     id: PyObjectId | None = Field(alias="_id")
-    spe_id: PyObjectId = Field(alias="species_id")
 
 
 class GeneOut(GeneBase):
     pass
+
+
+class GenePage(BasePageModel):
+    payload: list[GeneOut]
 
 
 class GeneDoc(GeneBase, DocumentBaseModel):

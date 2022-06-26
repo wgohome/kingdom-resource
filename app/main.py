@@ -4,6 +4,7 @@ from config import settings
 from .routes.api.v1 import (
     species,
     genes,
+    gene_annotations,
     sample_annotations,
 )
 
@@ -12,6 +13,7 @@ app = FastAPI(
 )
 app.include_router(species.router)
 app.include_router(genes.router)
+app.include_router(gene_annotations.router)
 app.include_router(sample_annotations.router)
 
 

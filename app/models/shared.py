@@ -62,7 +62,7 @@ class DocumentBaseModel(BaseModel):
 #
 class BasePageModel(CustomBaseModel):
     page_total: int = Field(ge=0)
-    curr_page: int = Field(gt=0)
+    curr_page: int = Field(ge=0)
     payload: list[CustomBaseModel]  # to be overriden in subclass
 
     # NOTE: Leaving validation out bcos
