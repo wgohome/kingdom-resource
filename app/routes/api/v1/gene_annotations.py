@@ -1,0 +1,129 @@
+from fastapi import APIRouter, Depends
+from pymongo.database import Database
+
+from app.db.gene_annotations_collection import (
+    convert_ga_in_to_ga_proc,
+    delete_one_ga,
+    enforce_no_existing_ga,
+    enforce_no_existing_gas,
+    find_all_gas,
+    find_one_ga,
+    insert_many_gas,
+    insert_one_ga,
+    insert_or_replace_many_gas,
+    update_one_ga,
+)
+from app.db.genes_collection import insert_or_replace_many_genes
+from app.db.setup import get_db
+from app.models.gene_annotation import (
+    GeneAnnotationIn,
+    GeneAnnotationOut,
+    GeneAnnotationPage,
+    GeneAnnotationUpdate,
+)
+
+router = APIRouter(prefix="/api/v1", tags=["gene_annotations"])
+
+
+# TODO: implement this as an PATCH request instead
+# @router.post(
+#     "species/{taxid}/gene_annotations",
+#     status_code=201,
+#     response_model=GeneAnnotationOut
+# )
+# def post_many_gene_annotations(
+#     taxid: int,
+#     ga_in: GeneAnnotationInput,
+#     db: Database = Depends(get_db)
+# ):
+#     species_id: PyObjectId = find_species_id_from_taxid(taxid, db)
+#     # Get all gene ids of this species
+#     # Map each row's gene labels to gene ids, if gene label not found throw 404
+#     # Group rows by Annotation type + label
+#     # If doc not found, create new ga doc, with gene ids added as fields
+#     # If gene_id(s) not already in existing doc, append to list
+#     # 2 way rs, also need to record ga id in gene doc
+
+
+@router.get("/gene_annotations", response_model=GeneAnnotationPage)
+def get_all_gene_annotations(
+    type: str | None = None,
+    label: str | None = None,
+    page_num: int = 1,
+    db: Database = Depends(get_db)
+):
+    return find_all_gas(page_num, db, type, label)
+
+
+@router.get(
+    "/gene_annotations/type/{type}/label/{label}",
+    response_model=GeneAnnotationOut
+)
+def get_one_gene_annotation(type: str, label: str, db: Database = Depends(get_db)):
+    return find_one_ga(type, label, db)
+
+
+@router.post(
+    "/gene_annotations",
+    status_code=201,
+    response_model=GeneAnnotationOut
+)
+def post_one_gene_annotation(ga_in: GeneAnnotationIn, db: Database = Depends(get_db)):
+    # check duplicates
+    enforce_no_existing_ga(ga_in, db)
+    ga_proc = convert_ga_in_to_ga_proc(ga_in, db)
+    ga_out = insert_one_ga(ga_proc, db)
+    return ga_out
+
+
+@router.post(
+    "/gene_annotations/batch",
+    status_code=201,
+    response_model=list[GeneAnnotationOut]
+)
+def post_many_gene_annotations(
+    ga_input: list[GeneAnnotationIn],
+    skip_duplicates: bool = False,
+    db: Database = Depends(get_db)
+):
+    if skip_duplicates is False:
+        enforce_no_existing_gas(ga_input, db)
+    ga_procs = [convert_ga_in_to_ga_proc(ga_in, db) for ga_in in ga_input]
+    return insert_many_gas(ga_procs, db)
+
+
+@router.put(
+     "/gene_annotations/batch",
+    status_code=200,
+    response_model=list[GeneAnnotationOut]
+)
+def put_many_gene_annotations(
+    ga_input: list[GeneAnnotationIn],
+    db: Database = Depends(get_db)
+):
+    ga_procs = [convert_ga_in_to_ga_proc(ga_in, db) for ga_in in ga_input]
+    return insert_or_replace_many_gas(ga_procs, db)
+
+
+@router.delete(
+    "/gene_annotations/type/{ga_type}/label/{label}",
+    status_code=200,
+    response_model=GeneAnnotationOut
+)
+def delete_gene_annotation(ga_type: str, label: str, db: Database = Depends(get_db)):
+    # TODO remove association from assocaited gene docs
+    return delete_one_ga(ga_type, label, db)
+
+
+@router.patch(
+    "/gene_annotations/type/{ga_type}/label/{label}",
+    status_code=200,
+    response_model=GeneAnnotationOut
+)
+def update_gene_annotation(
+    ga_type: str,
+    label: str,
+    update_form: GeneAnnotationUpdate,
+    db: Database = Depends(get_db)
+):
+    return update_one_ga(ga_type, label, update_form, db)

@@ -131,7 +131,7 @@ def test_get_many_genes_empty(one_species_inserted, t_client):
     }
 
 
-def test_get_genes_not_empty(many_genes_inserted, t_client):
+def test_get_many_genes_not_empty(many_genes_inserted, t_client):
     genes, taxid = many_genes_inserted
     response = t_client.get(f"/api/v1/species/{taxid}/genes")
     assert response.status_code == status.HTTP_200_OK
@@ -201,7 +201,7 @@ def test_patch_one_gene_unauthorized_field(one_gene_inserted, t_client):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_post_many_genes_all_valid(genes_in_valid, many_genes_inserted, t_client):
+def test_post_many_genes_all_valid(genes_in_valid, many_genes_inserted):
     genes, _ = genes_in_valid
     res_data, _ = many_genes_inserted
     assert len(genes) == len(res_data)
@@ -236,6 +236,7 @@ def test_duplicate_genes_ignored(
         json=genes
     )
     assert response.status_code == status.HTTP_201_CREATED
+    assert len(response.json()) < len(genes_in_some_repetition[0])
 
 
 def test_put_replace_genes(twenty_one_genes_inserted, one_gene, t_client):

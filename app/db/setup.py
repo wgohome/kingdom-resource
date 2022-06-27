@@ -6,6 +6,7 @@ from pymongo.database import Database
 from pymongo.collection import Collection
 
 from app.models.gene import GeneDoc
+from app.models.gene_annotation import GeneAnnotationDoc
 from app.models.sample_annotation import SampleAnnotationDoc
 from app.models.species import SpeciesDoc
 from config import settings
@@ -15,6 +16,7 @@ def setup_indexes(db):
     #
     # To search species by their taxid
     # and enforce unique taxids
+    #
     db[SpeciesDoc.Mongo.collection_name].create_index(
         [("tax", ASCENDING)],
         unique=True,
@@ -23,13 +25,24 @@ def setup_indexes(db):
     #
     # To search gene by their species and/or gene label
     # and enforce unique gene labels within each species scope
+    #
     db[GeneDoc.Mongo.collection_name].create_index(
         [("spe_id", ASCENDING), ("label", ASCENDING)],
         unique=True,
         name="unique_species_gene_labels"
     )
     #
+    # To search gene annotations by type and label
+    # and enforce uniqueness
+    #
+    db[GeneAnnotationDoc.Mongo.collection_name].create_index(
+        [("type", ASCENDING), ("label", ASCENDING)],
+        unique=True,
+        name="unique_gene_annotations_type_and_label"
+    )
+    #
     # To search sample annotations by type + label, gene
+    #
     db[SampleAnnotationDoc.Mongo.collection_name].create_index(
         [
             ("spe_id", ASCENDING),
@@ -40,9 +53,6 @@ def setup_indexes(db):
         unique=True,
         name="unique_sample_annotation_doc"
     )
-    # TODO
-    # test if the unique constraint working
-    # see if need more index for searching by species and gene
 
 
 @lru_cache

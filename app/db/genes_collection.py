@@ -86,7 +86,7 @@ def insert_or_replace_many_genes(
             species_id=species_id,
             **gene_in.dict_for_db()
         )
-        # BUG: annotations will be reset! If don't want to reset, use patch instead
+        # BUG: annotations array will be reset! If don't want to reset, use patch instead
         to_write = gene_doc.dict_for_db()
         _ = GENES_COLL.replace_one(
             {"spe_id": species_id, "label": gene_doc.label},
