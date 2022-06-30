@@ -20,6 +20,11 @@ from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseMode
 #     details: dict | None = Field(alias="details")
 
 
+class GeneInput(CustomBaseModel):
+    taxid: int
+    gene_label: str
+
+
 class GeneAnnotationBase(CustomBaseModel):
     type: str  # Annotation type, eg Gene Ontology, Mapman
     label: str   # Annotation identifier to be indexed for uniqueness with type
@@ -31,7 +36,7 @@ class GeneAnnotationUpdate(GeneAnnotationBase):
 
 
 class GeneAnnotationIn(GeneAnnotationBase):
-    gene_labels: list[str] = list()
+    genes: list[GeneInput] = list()
 
 
 class GeneAnnotationProcessed(GeneAnnotationBase):

@@ -3,8 +3,10 @@ from fastapi import HTTPException, status
 from pymongo import ReturnDocument
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
+from app.db.genes_collection import find_gene_id_from_label
 
 from app.db.setup import get_collection
+from app.db.species_collection import find_species_id_from_taxid
 from app.models.gene import (
     GeneDoc,
 )
@@ -15,6 +17,7 @@ from app.models.gene_annotation import (
     GeneAnnotationPage,
     GeneAnnotationProcessed,
     GeneAnnotationUpdate,
+    GeneInput,
 )
 from app.models.shared import PyObjectId
 from config import settings
@@ -27,6 +30,7 @@ def find_all_gas(
     label: str | None = None,
 ) -> GeneAnnotationPage:
     GA_COLL = get_collection(GeneAnnotationDoc, db)
+    # TODO: may not make sense to filter by labels, that would be a singular GET
     query_filters = {
         key: value
         for key, value in {"type": type, "label": label}.items()
@@ -111,6 +115,26 @@ def insert_or_replace_many_gas(ga_proc_list: list[GeneAnnotationProcessed], db: 
     return final_docs
 
 
+def insert_one_new_ga_or_append_gene_ids(
+    ga_proc: GeneAnnotationProcessed,
+    db: Database
+) -> GeneAnnotationOut:
+    GA_COLL = get_collection(GeneAnnotationDoc, db)
+    ga_dict = GA_COLL.find_one({"type": ga_proc.type, "label": ga_proc.label})
+    if ga_dict is None:
+        return insert_one_ga(ga_proc, db)
+    updated = GA_COLL.find_one_and_update(
+        {"type": ga_proc.type, "label": ga_proc.label},
+        {
+            "$addToSet": {"gene_ids": {"$each": ga_proc.gene_ids}},
+            # "$setOnInsert": ga_proc.dict_for_db()
+        },
+        # upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    return GeneAnnotationOut(**updated)
+
+
 def delete_one_ga(ga_type: str, label: str, db: Database):
     GA_COLL = get_collection(GeneAnnotationDoc, db)
     deleted = GA_COLL.find_one_and_delete(
@@ -179,17 +203,29 @@ def enforce_no_existing_ga(ga_in: GeneAnnotationIn, db: Database) -> None:
         )
 
 
-def gene_labels_to_ids(labels: list[str], db: Database) -> list[PyObjectId]:
+def gene_labels_to_ids(genes: list[GeneInput], db: Database) -> list[PyObjectId]:
     GENE_COLL = get_collection(GeneDoc, db)
+    # TODO if gene not found, to return an array of error instead of raising only one at a time
+    query = []
+    for gene in genes:
+        # These find methods will raise 404 if species or gene not found
+        spe_id = find_species_id_from_taxid(gene.taxid, db)
+        _ = find_gene_id_from_label(spe_id, gene.gene_label, db)
+        query.append({
+            "spe_id": spe_id,
+            "label": gene.gene_label
+        })
+    if query == []:  # avoid pymongo.errors.OperationFailure
+        return query
     cursor = GENE_COLL.find(
-        {"label": {"$in": labels}},
+        {"$or": query},
         {"_id": 1}
     )
     return [doc["_id"] for doc in cursor]
 
 
 def convert_ga_in_to_ga_proc(ga_in: GeneAnnotationIn, db: Database) -> GeneAnnotationProcessed:
-    gene_ids = gene_labels_to_ids(ga_in.gene_labels, db)
+    gene_ids = gene_labels_to_ids(ga_in.genes, db)
     return GeneAnnotationProcessed(
         type=ga_in.type,
         label=ga_in.label,

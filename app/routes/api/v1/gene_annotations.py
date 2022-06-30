@@ -10,6 +10,7 @@ from app.db.gene_annotations_collection import (
     find_one_ga,
     insert_many_gas,
     insert_one_ga,
+    insert_one_new_ga_or_append_gene_ids,
     insert_or_replace_many_gas,
     update_one_ga,
 )
@@ -93,7 +94,7 @@ def post_many_gene_annotations(
 
 
 @router.put(
-     "/gene_annotations/batch",
+    "/gene_annotations/batch",
     status_code=200,
     response_model=list[GeneAnnotationOut]
 )
@@ -103,6 +104,33 @@ def put_many_gene_annotations(
 ):
     ga_procs = [convert_ga_in_to_ga_proc(ga_in, db) for ga_in in ga_input]
     return insert_or_replace_many_gas(ga_procs, db)
+
+
+#
+# Upsert-like operation
+# For each GeneAnnotationIn in the array
+#   - If GeneAnnotationDoc not present yet,
+#       - Insert the doc to DB
+#       - Append the updated doc to the response model array
+#   - Otherwise, find the existing GeneAnnotationDoc
+#       - Take taxid + gene labels combi that are not already embedded in the doc
+#       - Append to the genes array in the doc
+#       - Append the updated doc to the response model array
+#
+@router.patch(
+    "/gene_annotations/batch",
+    status_code=200,
+    response_model=list[GeneAnnotationOut]
+)
+def add_genes_to_gene_annotations(
+    ga_input: list[GeneAnnotationIn],
+    db: Database = Depends(get_db)
+):
+    ga_procs = [convert_ga_in_to_ga_proc(ga_in, db) for ga_in in ga_input]
+    return [
+        insert_one_new_ga_or_append_gene_ids(ga_proc, db)
+        for ga_proc in ga_procs
+    ]
 
 
 @router.delete(

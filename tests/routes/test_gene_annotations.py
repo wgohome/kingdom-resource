@@ -1,3 +1,4 @@
+import json
 import math
 import pytest
 from fastapi import status
@@ -10,21 +11,28 @@ from config import settings
 
 
 @pytest.fixture
-def gene_labels_1(many_genes_inserted):
-    genes, _ = many_genes_inserted
+def genes_1(many_genes_inserted):
+    genes, taxid = many_genes_inserted
     labels = [gene["label"] for gene in genes]
-    return labels[::2]
+    return labels[::2], taxid
 
 
 @pytest.fixture
-def gene_labels_2(many_genes_inserted):
-    genes, _ = many_genes_inserted
+def genes_2(many_genes_inserted):
+    genes, taxid = many_genes_inserted
     labels = [gene["label"] for gene in genes]
-    return labels[::3]
+    return labels[::3], taxid
 
 
 @pytest.fixture
-def ga_dict_1(gene_labels_1):
+def ga_dict_1(genes_1):
+    genes = [
+        {
+            "taxid": genes_1[1],
+            "gene_label": gene_label
+        }
+        for gene_label in genes_1[0]
+    ]
     ga_dict = {
         "type": "test_mercator",
         "label": "1.1.1.2.2.1",
@@ -32,13 +40,20 @@ def ga_dict_1(gene_labels_1):
             "desc": "component PsbO/OEC33 of PS-II oxygen-evolving center",
             "binname": "Photosynthesis.photophosphorylation.photosystem II.PS-II complex.oxygen-evolving center (OEC) extrinsic proteins.component OEC33/PsbO"
         },
-        "gene_labels": gene_labels_1
+        "genes": genes
     }
     return ga_dict
 
 
 @pytest.fixture
-def ga_dict_2(gene_labels_2):
+def ga_dict_2(genes_2):
+    genes = [
+        {
+            "taxid": genes_2[1],
+            "gene_label": gene_label
+        }
+        for gene_label in genes_2[0]
+    ]
     ga_dict = {
         "type": "test_mercator",
         "label": "1.1.1.2.1.1",
@@ -46,14 +61,14 @@ def ga_dict_2(gene_labels_2):
             "desc": "component PsbA/D1 of PS-II reaction center complex",
             "binname": "Photosynthesis.photophosphorylation.photosystem II.PS-II complex.reaction center complex.component D1/PsbA"
         },
-        "gene_labels": gene_labels_2
+        "genes": genes
     }
     return ga_dict
 
 
 @pytest.fixture
 def twenty_one_gas_list(many_genes_inserted):
-    genes, _ = many_genes_inserted
+    genes, taxid = many_genes_inserted
     return [
         {
             "type": f"Gene Annotation Type {i // 5 + 1}",
@@ -61,7 +76,13 @@ def twenty_one_gas_list(many_genes_inserted):
             "details": {
                 "description": f"rubbish {i}"
             },
-            "gene_labels": [gene["label"] for gene in genes]
+            "genes": [
+                {
+                    "taxid": taxid,
+                    "gene_label": gene["label"]
+                }
+                for gene in genes[:len(genes) - 1]
+            ]
         }
         for i in range(1, 22)
     ]
@@ -96,7 +117,7 @@ def test_post_one_ga_valid(ga_dict_1_inserted, ga_dict_1, t_client):
     ga = ga_dict_1_inserted
     assert ga["type"] == ga_dict_1["type"]
     assert ga["label"] == ga_dict_1["label"]
-    assert len(ga["gene_ids"]) == len(ga_dict_1["gene_labels"])
+    assert len(ga["gene_ids"]) == len(ga_dict_1["genes"])
 
 
 def test_post_one_ga_duplicate(ga_dict_1_inserted, ga_dict_1, t_client):
@@ -215,7 +236,7 @@ def test_post_many_gas_all_valid(twenty_one_gas_inserted, twenty_one_gas_list):
     assert {ga["label"] for ga in res_data} == {ga["label"] for ga in in_data}
     for i in range(0, len(res_data), 7):
         assert len(res_data[i]["gene_ids"]) > 0
-        assert len(res_data[i]["gene_ids"]) == len(in_data[i]["gene_labels"])
+        assert len(res_data[i]["gene_ids"]) == len(in_data[i]["genes"])
 
 
 def test_any_duplicate_gas_invalid(
@@ -251,7 +272,7 @@ def test_put_replace_gas(twenty_one_gas_inserted, ga_dict_1, t_client):
     #
     to_replace = twenty_one_gas_inserted[0]
     to_replace["label"] = to_replace["label"] + "_modified"
-    to_replace["gene_labels"] = []  # TODO
+    to_replace["genes"] = []  # TODO
     to_replace.pop("_id")
     to_replace.pop("gene_ids")
     response = t_client.put(
@@ -263,4 +284,38 @@ def test_put_replace_gas(twenty_one_gas_inserted, ga_dict_1, t_client):
     label = to_replace["label"]
     response = t_client.get(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}")
     assert response.status_code == status.HTTP_200_OK
-    # TODO better check that old doc completely replaced, perhapds check gene ids replace by new ones?
+    # TODO better check that old doc completely replaced, perhaps check gene ids replace by new ones?
+
+
+#
+# Batch update to append gene_ids to GeneAnnotationDoc if present
+# otherwise, create new Doc
+#
+def test_patch_gas_batch(
+    twenty_one_gas_inserted,
+    twenty_one_gas_list,
+    ga_dict_2,
+    t_client
+):
+    ga_1_original = twenty_one_gas_list[0]
+    # NOTE: this deepcopy implementation only works if json is serializable,
+    #   eg, in this case no ObjectId in the dict yet
+    ga_1_modified = json.loads(json.dumps(ga_1_original))
+    ga_1_modified["genes"] = [ga_dict_2["genes"][-1]]
+    ga_1_modified["details"]["desc"] = "new description"
+    response = t_client.patch(
+        "/api/v1/gene_annotations/batch",
+        json=[ga_dict_2, ga_1_modified]
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()) == 2
+    # Check that ga dict 2 is created
+    response = t_client.get(f"/api/v1/gene_annotations/type/{ga_dict_2['type']}/label/{ga_dict_2['label']}")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["type"] == ga_dict_2["type"]
+    assert response.json()["label"] == ga_dict_2["label"]
+    # Check that one gene is added to existing ga_1 doc in the db
+    response = t_client.get(f"/api/v1/gene_annotations/type/{ga_1_modified['type']}/label/{ga_1_modified['label']}")
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["gene_ids"]) > len(ga_1_original["genes"])
+    assert response.json()["details"] == ga_1_original["details"]
