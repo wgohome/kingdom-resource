@@ -1,4 +1,4 @@
-from pydantic import BaseSettings, validator
+from pydantic import BaseSettings, EmailStr, SecretStr, validator
 
 
 class Settings(BaseSettings):
@@ -12,6 +12,15 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None
     DATABASE_NAME: str = ""
     TEST_DATABASE_NAME: str = ""
+
+    # Auth
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_DAYS: int = 30
+
+    # Seed Master admin
+    ADMIN_EMAIL: EmailStr
+    ADMIN_PW: SecretStr
 
     # Constants
     N_DECIMALS: int = 3
@@ -39,6 +48,12 @@ class Settings(BaseSettings):
         ):
             return f"mongodb://{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
         return f"mongodb://{values['MONGO_USER']}:{values['MONGO_PASSWORD']}@{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
+
+    @validator("ALGORITHM", pre=True, always=True)
+    def set_algorithm(cls, v):
+        if v is None or v == "":
+            return "HSA256"
+        return v.upper()
 
 
 settings = Settings()
