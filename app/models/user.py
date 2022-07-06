@@ -4,19 +4,20 @@ from app.models.shared import CustomBaseModel, DocumentBaseModel, PyObjectId
 
 
 class Token(CustomBaseModel):
+    # This is the expected return format for the OAuth2 /token endpoint
     access_token: str
     token_type: str
 
 
 class TokenData(CustomBaseModel):
-    email: EmailStr
+    username: EmailStr | None = None
     scopes: list[str] = []
 
 
 class User(CustomBaseModel):
     email: EmailStr
     role: str = "staff"
-    api_key: UUID4 | None
+    api_key: str | None = None
 
     @validator("api_key", pre=True, always=True)
     def set_api_key(cls, v):

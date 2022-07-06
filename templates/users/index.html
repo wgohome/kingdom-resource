@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  Users
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-baseline">
+    <h1 class="m-0">Users</h1>
+    <div>
+      <a href={{ url_for("users_new") }} class="btn btn-primary">Add user</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped my-4">
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Email</th>
+          <th scope="col">Role</th>
+          <th scope="col">API Key</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <th scope="row">{{ loop.index }}</th>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>{{ user.api_key }}</td>
+            <td>
+              <a href="/users/{{ user.id }}" class="btn btn-danger delete-request">Delete</a>
+              <!-- <form method="post" action={{ url_for('users_delete', id=user.id) }}>
+                <input type="submit" name="delete" value="Delete">
+              </form> -->
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block js %}
+console.log("here");
+
+const getCookie = (name) => {
+  var cookieArr = document.cookie.split(";");
+  for(var i = 0; i < cookieArr.length; i++) {
+    var cookiePair=cookieArr[i].split("=");
+    if(name == cookiePair[0].trim()) {
+      return cookiePair[1].replace(/^["'](.+(?=["']$))["']$/, '$1');
+    }
+  }
+  return null;
+}
+
+const send_delete_req = (endpoint) => {
+  debugger;
+  console.log(getCookie('authorization'));
+  fetch(endpoint, {
+    method: 'delete',
+    headers: {'Authorization': getCookie('authorization')}
+  });
+}
+
+const deleteButtons = document.getElementByClassName("delete-request");
+for (btn in deleteButtons) {
+  btn.addEventListener("click", (e) => {
+    debugger;
+    e.preventDefault();
+    send_delete_req(btn.href);
+  })
+}
+{% endblock %}

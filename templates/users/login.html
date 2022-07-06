@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Login as admin/staff
+{% endblock %}
+
+{% block content %}
+<h1>Login as Admin or Staff</h1>
+<form class="my-4" action={{ url_for("login_user") }} method="POST">
+  <div class="mb-3">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" class="form-control" id="email" name="email" placeholder="me@gmail.com">
+  </div>
+  <div class="mb-3">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" class="form-control" id="password" name="password">
+  </div>
+  <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+<div>
+  <a href={{ url_for("users_index") }} class="btn btn-light">Back to all users</a>
+</div>
+{% endblock %}

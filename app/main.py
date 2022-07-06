@@ -9,7 +9,7 @@ from .routes.api.v1 import (
     sample_annotations,
     users,
 )
-# from app.routes.users import router as user_router
+from app.routes.users import router as user_router
 
 app = FastAPI(title=settings.TITLE)
 # API endpoints
@@ -19,8 +19,8 @@ app.include_router(gene_annotations.router)
 app.include_router(sample_annotations.router)
 app.include_router(users.router)
 # Templates
-# app.include_router(user_router)
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(user_router)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/about")
