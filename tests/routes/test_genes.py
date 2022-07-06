@@ -59,7 +59,7 @@ def twenty_one_genes_list(one_species_inserted):
 def one_gene_inserted(one_species_inserted, one_gene, t_client):
     taxid = one_species_inserted['taxid']
     response = t_client.post(
-        f"/api/v1/species/{taxid}/genes",
+        f"/api/v1/species/{taxid}/genes?api_key={settings.TEST_API_KEY}",
         json=one_gene
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -70,7 +70,7 @@ def one_gene_inserted(one_species_inserted, one_gene, t_client):
 def many_genes_inserted(genes_in_valid, t_client):
     genes, taxid = genes_in_valid
     response = t_client.post(
-        f"/api/v1/species/{taxid}/genes/batch",
+        f"/api/v1/species/{taxid}/genes/batch?api_key={settings.TEST_API_KEY}",
         json=genes
     )
     assert response.status_code == 201
@@ -81,7 +81,7 @@ def many_genes_inserted(genes_in_valid, t_client):
 def twenty_one_genes_inserted(twenty_one_genes_list, t_client):
     genes, taxid = twenty_one_genes_list
     response = t_client.post(
-        f"/api/v1/species/{taxid}/genes/batch",
+        f"/api/v1/species/{taxid}/genes/batch?api_key={settings.TEST_API_KEY}",
         json=genes
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -101,7 +101,7 @@ def test_post_one_gene_valid(one_gene_inserted, one_gene):
 def test_post_one_gene_duplicate(one_gene_inserted, one_gene, t_client):
     _, taxid = one_gene_inserted
     response = t_client.post(
-        f"/api/v1/species/{taxid}/genes",
+        f"/api/v1/species/{taxid}/genes?api_key={settings.TEST_API_KEY}",
         json=one_gene
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -166,7 +166,7 @@ def test_get_many_genes_w_pages(twenty_one_genes_inserted, t_client):
 
 def test_delete_one_gene(one_gene_inserted, t_client):
     gene, taxid = one_gene_inserted
-    response = t_client.delete(f"/api/v1/species/{taxid}/genes/{gene['label']}")
+    response = t_client.delete(f"/api/v1/species/{taxid}/genes/{gene['label']}?api_key={settings.TEST_API_KEY}")
     assert response.status_code == status.HTTP_200_OK
     response = t_client.get(f"/api/v1/species/{taxid}/genes/{gene['label']}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -179,7 +179,7 @@ def test_patch_one_gene(one_gene_inserted, t_client):
         "alias": ["new gene alias"]
     }
     response = t_client.patch(
-        f"/api/v1/species/{taxid}/genes/{gene['label']}",
+        f"/api/v1/species/{taxid}/genes/{gene['label']}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_200_OK
@@ -195,7 +195,7 @@ def test_patch_one_gene_unauthorized_field(one_gene_inserted, t_client):
         "anots": ["123456789012345678901234"]
     }
     response = t_client.patch(
-        f"/api/v1/species/{taxid}/genes/{gene['label']}",
+        f"/api/v1/species/{taxid}/genes/{gene['label']}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -219,7 +219,7 @@ def test_any_duplicate_gene_invalid(
 ):
     genes, _ = genes_in_some_repetition
     response = t_client.post(
-        "/api/v1/species/3702/genes/batch",
+        f"/api/v1/species/3702/genes/batch?api_key={settings.TEST_API_KEY}",
         json=genes
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -232,7 +232,7 @@ def test_duplicate_genes_ignored(
 ):
     genes, _ = genes_in_some_repetition
     response = t_client.post(
-        "/api/v1/species/3702/genes/batch?skip_duplicates=true",
+        f"/api/v1/species/3702/genes/batch?skip_duplicates=true&api_key={settings.TEST_API_KEY}",
         json=genes
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -250,7 +250,7 @@ def test_put_replace_genes(twenty_one_genes_inserted, one_gene, t_client):
     to_replace.pop("species_id")
     to_replace.pop("annotations")
     response = t_client.put(
-        f"/api/v1/species/{taxid}/genes/batch",
+        f"/api/v1/species/{taxid}/genes/batch?api_key={settings.TEST_API_KEY}",
         json=[one_gene, to_replace]
     )
     assert response.status_code == status.HTTP_200_OK

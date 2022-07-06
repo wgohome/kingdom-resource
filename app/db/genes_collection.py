@@ -127,6 +127,15 @@ def update_one_gene(species_id: PyObjectId, gene_label: str, updates: GeneIn, db
     return GeneOut(**updated)
 
 
+def add_annotations_to_gene(gene_id: PyObjectId, ga_ids: list[PyObjectId], db: Database) -> GeneOut:
+    GENES_COLL = get_collection(GeneDoc, db)
+    updated = GENES_COLL.find_one_and_update(
+        {"_id": gene_id},
+        {"$push": {"anots": {"$each": ga_ids}}}
+    )
+    return updated
+
+
 def enforce_no_existing_genes(species_id: PyObjectId, genes_in: list[GeneIn], db: Database) -> None:
     # Uniqueness is enforced within the scope of the species only
     GENES_COLL = get_collection(GeneDoc, db)

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # Seed Master admin
     ADMIN_EMAIL: EmailStr
     ADMIN_PW: SecretStr
+    TEST_API_KEY: str
 
     # Constants
     N_DECIMALS: int = 3

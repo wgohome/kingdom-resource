@@ -26,6 +26,10 @@ class GeneProcessed(GeneIn):
     #   reference to gene_annotations collection
 
 
+class GeneUpdate(GeneIn):
+    anots: list[PyObjectId] = Field(default_factory=list, alias="annotations")
+
+
 class GeneBase(GeneProcessed):
     id: PyObjectId | None = Field(alias="_id")
 

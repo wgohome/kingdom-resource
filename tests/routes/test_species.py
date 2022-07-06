@@ -85,7 +85,7 @@ def twenty_one_species_list() -> list[dict]:
 @pytest.fixture
 def one_species_inserted(one_species_list, t_client):
     response = t_client.post(
-        "/api/v1/species",
+        f"/api/v1/species?api_key={settings.TEST_API_KEY}",
         json=one_species_list[0]
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -95,7 +95,7 @@ def one_species_inserted(one_species_list, t_client):
 @pytest.fixture
 def twenty_one_species_inserted(twenty_one_species_list, t_client):
     response = t_client.post(
-        "/api/v1/species/batch",
+        f"/api/v1/species/batch?api_key={settings.TEST_API_KEY}",
         json=twenty_one_species_list
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -109,7 +109,7 @@ def twenty_one_species_inserted(twenty_one_species_list, t_client):
 
 def test_post_one_species_valid(one_species_list, t_client):
     response = t_client.post(
-        "/api/v1/species",
+        f"/api/v1/species?api_key={settings.TEST_API_KEY}",
         json=one_species_list[0]
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -118,7 +118,7 @@ def test_post_one_species_valid(one_species_list, t_client):
 
 def test_post_one_species_duplicate(one_species_inserted, one_species_list, t_client):
     response = t_client.post(
-        "/api/v1/species",
+        f"/api/v1/species?api_key={settings.TEST_API_KEY}",
         json=one_species_list[0]
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -175,7 +175,7 @@ def test_get_many_species_w_pages(twenty_one_species_inserted, t_client):
 
 def test_delete_one_species(one_species_inserted, t_client):
     taxid = one_species_inserted["taxid"]
-    response = t_client.delete(f"/api/v1/species/{taxid}")
+    response = t_client.delete(f"/api/v1/species/{taxid}?api_key={settings.TEST_API_KEY}")
     assert response.status_code == status.HTTP_200_OK
     response = t_client.get(f"/api/v1/species/{taxid}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -192,7 +192,7 @@ def test_patch_one_species(one_species_inserted, t_client):
         }
     }
     response = t_client.patch(
-        f"/api/v1/species/{taxid}",
+        f"/api/v1/species/{taxid}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_200_OK
@@ -215,7 +215,7 @@ def test_patch_one_species_unauthorized_field(one_species_inserted, t_client):
         }
     }
     response = t_client.patch(
-        f"/api/v1/species/{taxid}",
+        f"/api/v1/species/{taxid}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -224,7 +224,7 @@ def test_patch_one_species_unauthorized_field(one_species_inserted, t_client):
 def test_post_many_species_all_valid(two_species_list, t_client):
     # Begin with empty collection
     response = t_client.post(
-        "/api/v1/species/batch",
+        f"/api/v1/species/batch?api_key={settings.TEST_API_KEY}",
         json=two_species_list
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -243,7 +243,7 @@ def test_any_duplicate_species_invalid(
     t_client
 ):
     response = t_client.post(
-        "/api/v1/species/batch",
+        f"/api/v1/species/batch?api_key={settings.TEST_API_KEY}",
         json=two_species_list_duplicated
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -261,7 +261,7 @@ def test_duplicate_species_ignored(
     t_client
 ):
     response = t_client.post(
-        "/api/v1/species/batch?skip_duplicates=true",
+        f"/api/v1/species/batch?skip_duplicates=true&api_key={settings.TEST_API_KEY}",
         json=two_species_list_duplicated
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -283,7 +283,7 @@ def test_put_replace_species(twenty_one_species_inserted, one_species_list, t_cl
     to_replace.pop("created_at")
     to_replace.pop("updated_at")
     response = t_client.put(
-        "/api/v1/species/batch",
+        f"/api/v1/species/batch?api_key={settings.TEST_API_KEY}",
         json=one_species_list + [to_replace]
     )
     assert response.status_code == status.HTTP_200_OK

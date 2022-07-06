@@ -63,6 +63,14 @@ def find_one_ga(type: str, label: str, db: Database) -> GeneAnnotationOut:
     return GeneAnnotationOut(**ga_dict)
 
 
+def check_if_ga_exists(type: str, label: str, db: Database) -> bool:
+    GA_COLL = get_collection(GeneAnnotationDoc, db)
+    ga_dict = GA_COLL.find_one({"type": type, "label": label}, {"_id"})
+    if ga_dict is None:
+        return False
+    return True
+
+
 def insert_one_ga(ga_proc: GeneAnnotationProcessed, db: Database) -> GeneAnnotationOut:
     GA_COLL = get_collection(GeneAnnotationDoc, db)
     to_insert = ga_proc.dict(exclude_none=True)
@@ -70,6 +78,7 @@ def insert_one_ga(ga_proc: GeneAnnotationProcessed, db: Database) -> GeneAnnotat
     return GeneAnnotationOut(**to_insert)
 
 
+# FIXME DEPRECATED
 def insert_many_gas(ga_procs: list[GeneAnnotationProcessed], db: Database) -> list[GeneAnnotationOut]:
     GA_COLL = get_collection(GeneAnnotationDoc, db)
     to_insert = [ga_proc.dict_for_db() for ga_proc in ga_procs]

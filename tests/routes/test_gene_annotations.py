@@ -91,7 +91,7 @@ def twenty_one_gas_list(many_genes_inserted):
 @pytest.fixture
 def ga_dict_1_inserted(ga_dict_1, t_client):
     response = t_client.post(
-        "/api/v1/gene_annotations",
+        f"/api/v1/gene_annotations?api_key={settings.TEST_API_KEY}",
         json=ga_dict_1
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -101,7 +101,7 @@ def ga_dict_1_inserted(ga_dict_1, t_client):
 @pytest.fixture
 def twenty_one_gas_inserted(twenty_one_gas_list, t_client):
     response = t_client.post(
-        "/api/v1/gene_annotations/batch",
+        f"/api/v1/gene_annotations/batch?api_key={settings.TEST_API_KEY}",
         json=twenty_one_gas_list
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -122,7 +122,7 @@ def test_post_one_ga_valid(ga_dict_1_inserted, ga_dict_1, t_client):
 
 def test_post_one_ga_duplicate(ga_dict_1_inserted, ga_dict_1, t_client):
     response = t_client.post(
-        "/api/v1/gene_annotations",
+        f"/api/v1/gene_annotations?api_key={settings.TEST_API_KEY}",
         json=ga_dict_1
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -190,7 +190,7 @@ def test_get_many_gas_w_pages(twenty_one_gas_inserted, t_client):
 
 def test_delete_one_ga(ga_dict_1_inserted, t_client):
     ga_type, label = ga_dict_1_inserted["type"], ga_dict_1_inserted["label"]
-    response = t_client.delete(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}")
+    response = t_client.delete(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}?api_key={settings.TEST_API_KEY}")
     assert response.status_code == status.HTTP_200_OK
     response = t_client.get(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -205,7 +205,7 @@ def test_patch_one_ga(ga_dict_1_inserted, t_client):
         "details": {"content": "no more details!"}
     }
     response = t_client.patch(
-        f"/api/v1/gene_annotations/type/{ga_type}/label/{label}",
+        f"/api/v1/gene_annotations/type/{ga_type}/label/{label}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_200_OK
@@ -222,7 +222,7 @@ def test_patch_one_ga_unauthorized_field(ga_dict_1_inserted, t_client):
         "genes_ids": ["123456789012345678901234"]
     }
     response = t_client.patch(
-        f"/api/v1/gene_annotations/type/{ga_type}/label/{label}",
+        f"/api/v1/gene_annotations/type/{ga_type}/label/{label}?api_key={settings.TEST_API_KEY}",
         json=to_update
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -246,7 +246,7 @@ def test_any_duplicate_gas_invalid(
     t_client
 ):
     response = t_client.post(
-        "/api/v1/gene_annotations/batch",
+        f"/api/v1/gene_annotations/batch?api_key={settings.TEST_API_KEY}",
         json=[ga_dict_1, ga_dict_2]
     )
     assert response.status_code == status.HTTP_409_CONFLICT
@@ -259,7 +259,7 @@ def test_duplicate_gas_ignored(
     t_client
 ):
     response = t_client.post(
-        "/api/v1/gene_annotations/batch?skip_duplicates=true",
+        f"/api/v1/gene_annotations/batch?skip_duplicates=true&api_key={settings.TEST_API_KEY}",
         json=[ga_dict_1, ga_dict_2]
     )
     assert response.status_code == status.HTTP_201_CREATED
@@ -276,13 +276,13 @@ def test_put_replace_gas(twenty_one_gas_inserted, ga_dict_1, t_client):
     to_replace.pop("_id")
     to_replace.pop("gene_ids")
     response = t_client.put(
-        "/api/v1/gene_annotations/batch",
+        f"/api/v1/gene_annotations/batch?api_key={settings.TEST_API_KEY}",
         json=[ga_dict_1, to_replace]
     )
     assert response.status_code == status.HTTP_200_OK
     ga_type = to_replace["type"]
     label = to_replace["label"]
-    response = t_client.get(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}")
+    response = t_client.get(f"/api/v1/gene_annotations/type/{ga_type}/label/{label}?api_key={settings.TEST_API_KEY}")
     assert response.status_code == status.HTTP_200_OK
     # TODO better check that old doc completely replaced, perhaps check gene ids replace by new ones?
 
@@ -304,7 +304,7 @@ def test_patch_gas_batch(
     ga_1_modified["genes"] = [ga_dict_2["genes"][-1]]
     ga_1_modified["details"]["desc"] = "new description"
     response = t_client.patch(
-        "/api/v1/gene_annotations/batch",
+        f"/api/v1/gene_annotations/batch?api_key={settings.TEST_API_KEY}",
         json=[ga_dict_2, ga_1_modified]
     )
     assert response.status_code == status.HTTP_200_OK

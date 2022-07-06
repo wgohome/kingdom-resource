@@ -1,20 +1,21 @@
+from collections import defaultdict
 from fastapi import APIRouter, Depends
 from pymongo.database import Database
 
 from app.db.gene_annotations_collection import (
+    check_if_ga_exists,
     convert_ga_in_to_ga_proc,
     delete_one_ga,
     enforce_no_existing_ga,
     enforce_no_existing_gas,
     find_all_gas,
     find_one_ga,
-    insert_many_gas,
     insert_one_ga,
     insert_one_new_ga_or_append_gene_ids,
     insert_or_replace_many_gas,
     update_one_ga,
 )
-from app.db.genes_collection import insert_or_replace_many_genes
+from app.db.genes_collection import add_annotations_to_gene
 from app.db.setup import get_db
 from app.db.users_collection import verify_api_key
 from app.models.gene_annotation import (
@@ -91,8 +92,18 @@ def post_many_gene_annotations(
 ):
     if skip_duplicates is False:
         enforce_no_existing_gas(ga_input, db)
-    ga_procs = [convert_ga_in_to_ga_proc(ga_in, db) for ga_in in ga_input]
-    return insert_many_gas(ga_procs, db)
+    gas_out = []
+    genes_update = defaultdict(list)
+    for ga_in in ga_input:
+        ga_proc = convert_ga_in_to_ga_proc(ga_in, db)
+        if check_if_ga_exists(ga_in.type, ga_in.label, db) is False:
+            ga_out = insert_one_ga(ga_proc, db)
+            gas_out.append(ga_out)
+            for gene_id in ga_proc.gene_ids:
+                genes_update[gene_id] = list(set(genes_update[gene_id]) & set(str(ga_out.id)))
+    for gene_id, ga_ids in genes_update.items():
+        add_annotations_to_gene(gene_id, ga_ids, db)
+    return gas_out
 
 
 @private_router.put(
