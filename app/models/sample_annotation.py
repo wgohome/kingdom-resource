@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, validator
 
 from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
 
@@ -15,6 +15,10 @@ class Sample(CustomBaseModel):
     lbl: str = Field(alias="sample_label")
     tpm: float = Field(alias="tpm_value")
 
+    @validator("lbl", pre=True)
+    def upcase_lbl(cls, v):
+        return v.upper()
+
 
 class SampleAnnotationBase(CustomBaseModel):
     spe_id: PyObjectId = Field(alias="species_id")
@@ -24,6 +28,14 @@ class SampleAnnotationBase(CustomBaseModel):
     spm: float = 0
     avg_tpm: float = 0
     samples: list[Sample]
+
+    @validator("type", pre=True)
+    def upcase_type(cls, v):
+        return v.upper()
+
+    @validator("lbl", pre=True)
+    def upcase_lbl(cls, v):
+        return v.upper()
 
 
 class SampleAnnotationRow(CustomBaseModel):  # tpm row not sample annotation

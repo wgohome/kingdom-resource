@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, validator
 
 from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseModel
 
@@ -18,6 +18,10 @@ class GeneIn(CustomBaseModel):
     #   indexed for search by label
     alias: list[str] = list()
     #   alias - other alternative gene identifiers
+
+    @validator("label", pre=True)
+    def upcase_label(cls, v):
+        return v.upper()
 
 
 class GeneProcessed(GeneIn):

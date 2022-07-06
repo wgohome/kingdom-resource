@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, validator
 
 from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseModel
 
@@ -24,11 +24,23 @@ class GeneInput(CustomBaseModel):
     taxid: int
     gene_label: str
 
+    @validator("gene_label", pre=True)
+    def upcase_gene_label(cls, v):
+        return v.upper()
+
 
 class GeneAnnotationBase(CustomBaseModel):
     type: str  # Annotation type, eg Gene Ontology, Mapman
     label: str   # Annotation identifier to be indexed for uniqueness with type
     details: dict | None
+
+    @validator("type", pre=True)
+    def upcase_type(cls, v):
+        return v.upper()
+
+    @validator("label", pre=True)
+    def upcase_label(cls, v):
+        return v.upper()
 
 
 class GeneAnnotationUpdate(GeneAnnotationBase):
@@ -44,7 +56,7 @@ class GeneAnnotationProcessed(GeneAnnotationBase):
 
 
 class GeneAnnotationOut(GeneAnnotationProcessed):
-    id: PyObjectId | None = Field(alias="_id")
+    id: PyObjectId = Field(alias="_id")
 
 
 class GeneAnnotationPage(BasePageModel):
@@ -52,7 +64,7 @@ class GeneAnnotationPage(BasePageModel):
 
 
 class GeneAnnotationDoc(GeneAnnotationProcessed, DocumentBaseModel):
-    id: PyObjectId | None = Field(alias="_id")
+    id: PyObjectId = Field(alias="_id")
 
     class Mongo:
         collection_name: str = "gene_annotations"
