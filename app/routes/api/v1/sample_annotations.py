@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from pymongo.database import Database
 
 from app.db.setup import get_db
+from app.db.users_collection import verify_api_key
 from app.models.sample_annotation import (
     SampleAnnotationInput,
     SampleAnnotationOut,
@@ -19,6 +20,7 @@ from app.db.sample_annotations_collection import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["sample_annotations"])
+private_router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 
 @router.get(
@@ -50,7 +52,7 @@ def get_sample_annotations_by_label(
     return find_sample_annotations_by_label(annotation_type, annotation_label, db)
 
 
-@router.post(
+@private_router.post(
     "/sample_annotations",
     status_code=201,
     response_model=list[SampleAnnotationOut]
@@ -68,3 +70,6 @@ def post_many_sample_annotations(
     sa_outs = [insert_or_update_one_sa_doc(sa_doc, db) for sa_doc in sa_docs]
     update_affected_spm(species_id, gene_id, sa_input.anontation_type, db)
     return sa_outs
+
+
+router.include_router(private_router)

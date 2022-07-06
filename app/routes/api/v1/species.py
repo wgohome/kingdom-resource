@@ -14,6 +14,7 @@ from app.db.species_collection import (
     insert_or_replace_many_species,
     update_one_species,
 )
+from app.db.users_collection import verify_api_key
 from app.models.species import (
     SpeciesIn,
     SpeciesOut,
@@ -23,6 +24,7 @@ from app.models.species import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["species"])
+private_router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 
 @router.get("/species", response_model=SpeciesPage)
@@ -35,7 +37,7 @@ def get_one_species_by_taxid(taxid: int, db: Database = Depends(get_db)):
     return find_one_species_by_taxid(taxid, db)
 
 
-@router.post(
+@private_router.post(
     "/species",
     status_code=201,
     response_model=SpeciesOut
@@ -48,7 +50,7 @@ def post_one_species(
     return insert_one_species(species_in, db)
 
 
-@router.post(
+@private_router.post(
     "/species/batch",
     status_code=201,
     response_model=list[SpeciesOut]
@@ -64,18 +66,18 @@ def post_many_species(
     return inserted_species
 
 
-@router.put("/species/batch", status_code=200, response_model=list[SpeciesOut])
+@private_router.put("/species/batch", status_code=200, response_model=list[SpeciesOut])
 def put_many_species(species_in_list: list[SpeciesIn], db: Database = Depends(get_db)):
     return insert_or_replace_many_species(species_in_list, db)
 
 
-@router.delete("/species/{taxid}", status_code=200, response_model=SpeciesOut)
+@private_router.delete("/species/{taxid}", status_code=200, response_model=SpeciesOut)
 def delete_species(taxid: int, db: Database = Depends(get_db)):
     # TODO delete associated resources
     return delete_one_species(taxid, db)
 
 
-@router.patch("/species/{taxid}", status_code=200, response_model=SpeciesOut)
+@private_router.patch("/species/{taxid}", status_code=200, response_model=SpeciesOut)
 def update_species(
     taxid: int,
     update_form: SpeciesUpdateIn,
@@ -84,3 +86,6 @@ def update_species(
     species_id = find_species_id_from_taxid(taxid, db)
     update_fields = SpeciesUpdate(**update_form.dict(exclude_unset=True))
     return update_one_species(species_id, update_fields, db)
+
+
+router.include_router(private_router)

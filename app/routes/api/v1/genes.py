@@ -15,6 +15,7 @@ from app.db.genes_collection import (
 from app.db.species_collection import (
     find_species_id_from_taxid,
 )
+from app.db.users_collection import verify_api_key
 from app.models.gene import (
     GeneOut,
     GeneIn,
@@ -25,6 +26,7 @@ from app.models.gene import (
 from app.models.shared import PyObjectId
 
 router = APIRouter(prefix="/api/v1", tags=["genes"])
+private_router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 
 @router.get("/species/{taxid}/genes", response_model=GenePage)
@@ -39,7 +41,7 @@ def get_one_gene(taxid: int, gene_label: str, db: Database = Depends(get_db)):
     return find_one_gene_by_label(species_id, gene_label, db)
 
 
-@router.post(
+@private_router.post(
     "/species/{taxid}/genes",
     status_code=201,
     response_model=GeneOut
@@ -55,7 +57,7 @@ def post_one_gene(
     return insert_one_gene(gene_processed, db)
 
 
-@router.post(
+@private_router.post(
     "/species/{taxid}/genes/batch",
     status_code=201,
     response_model=list[GeneOut]
@@ -80,7 +82,7 @@ def post_many_genes_by_species(
     return inserted_genes
 
 
-@router.put("/species/{taxid}/genes/batch", status_code=200, response_model=list[GeneOut])
+@private_router.put("/species/{taxid}/genes/batch", status_code=200, response_model=list[GeneOut])
 def put_many_genes_by_species(
     taxid: int,
     genes_in_list: list[GeneIn],
@@ -90,7 +92,7 @@ def put_many_genes_by_species(
     return insert_or_replace_many_genes(species_id, genes_in_list, db)
 
 
-@router.delete(
+@private_router.delete(
     "/species/{taxid}/genes/{gene_label}",
     status_code=200,
     response_model=GeneOut
@@ -100,7 +102,7 @@ def delete_gene(taxid: int, gene_label: str, db: Database = Depends(get_db)):
     return delete_one_gene(taxid, gene_label, db)
 
 
-@router.patch("/species/{taxid}/genes/{gene_label}", status_code=200, response_model=GeneOut)
+@private_router.patch("/species/{taxid}/genes/{gene_label}", status_code=200, response_model=GeneOut)
 def update_species(
     taxid: int,
     gene_label: str,
@@ -109,3 +111,6 @@ def update_species(
 ):
     species_id = find_species_id_from_taxid(taxid, db)
     return update_one_gene(species_id, gene_label, update_form, db)
+
+
+router.include_router(private_router)

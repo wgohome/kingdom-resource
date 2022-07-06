@@ -16,6 +16,7 @@ from app.db.gene_annotations_collection import (
 )
 from app.db.genes_collection import insert_or_replace_many_genes
 from app.db.setup import get_db
+from app.db.users_collection import verify_api_key
 from app.models.gene_annotation import (
     GeneAnnotationIn,
     GeneAnnotationOut,
@@ -24,6 +25,7 @@ from app.models.gene_annotation import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["gene_annotations"])
+private_router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 
 # TODO: implement this as an PATCH request instead
@@ -64,7 +66,7 @@ def get_one_gene_annotation(type: str, label: str, db: Database = Depends(get_db
     return find_one_ga(type, label, db)
 
 
-@router.post(
+@private_router.post(
     "/gene_annotations",
     status_code=201,
     response_model=GeneAnnotationOut
@@ -77,7 +79,7 @@ def post_one_gene_annotation(ga_in: GeneAnnotationIn, db: Database = Depends(get
     return ga_out
 
 
-@router.post(
+@private_router.post(
     "/gene_annotations/batch",
     status_code=201,
     response_model=list[GeneAnnotationOut]
@@ -93,7 +95,7 @@ def post_many_gene_annotations(
     return insert_many_gas(ga_procs, db)
 
 
-@router.put(
+@private_router.put(
     "/gene_annotations/batch",
     status_code=200,
     response_model=list[GeneAnnotationOut]
@@ -117,7 +119,7 @@ def put_many_gene_annotations(
 #       - Append to the genes array in the doc
 #       - Append the updated doc to the response model array
 #
-@router.patch(
+@private_router.patch(
     "/gene_annotations/batch",
     status_code=200,
     response_model=list[GeneAnnotationOut]
@@ -133,7 +135,7 @@ def add_genes_to_gene_annotations(
     ]
 
 
-@router.delete(
+@private_router.delete(
     "/gene_annotations/type/{ga_type}/label/{label}",
     status_code=200,
     response_model=GeneAnnotationOut
@@ -143,7 +145,7 @@ def delete_gene_annotation(ga_type: str, label: str, db: Database = Depends(get_
     return delete_one_ga(ga_type, label, db)
 
 
-@router.patch(
+@private_router.patch(
     "/gene_annotations/type/{ga_type}/label/{label}",
     status_code=200,
     response_model=GeneAnnotationOut
@@ -155,3 +157,6 @@ def update_gene_annotation(
     db: Database = Depends(get_db)
 ):
     return update_one_ga(ga_type, label, update_form, db)
+
+
+router.include_router(private_router)

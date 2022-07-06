@@ -193,3 +193,19 @@ def get_admin_by_cookie(user: UserOut = Depends(get_user_by_cookie)) -> UserOut:
             detail="Not enough permissions"
         )
     return user
+
+
+def verify_api_key(api_key: str | None = None, db: Database = Depends(get_db)) -> bool:
+    if api_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate api_key credentials"
+        )
+    USERS_COLL = get_collection(UserDoc, db)
+    user_dict = USERS_COLL.find_one({"api_key": api_key},  {"_id": 1})
+    if user_dict is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate api_key credentials"
+        )
+    return True
