@@ -44,7 +44,7 @@
 {% endblock %}
 
 {% block js %}
-console.log("here");
+// console.log("here");
 
 const getCookie = (name) => {
   var cookieArr = document.cookie.split(";");
@@ -58,7 +58,6 @@ const getCookie = (name) => {
 }
 
 const send_delete_req = (endpoint) => {
-  debugger;
   console.log(getCookie('authorization'));
   fetch(endpoint, {
     method: 'delete',
@@ -66,12 +65,14 @@ const send_delete_req = (endpoint) => {
   });
 }
 
-const deleteButtons = document.getElementByClassName("delete-request");
-for (btn in deleteButtons) {
+const deleteButtons = document.getElementsByClassName("delete-request");
+// console.log(deleteButtons);
+for (var i = 0; i < deleteButtons.length; i++) {
+  const btn = deleteButtons[i];
   btn.addEventListener("click", (e) => {
-    debugger;
     e.preventDefault();
     send_delete_req(btn.href);
+    location.reload();
   })
 }
 {% endblock %}

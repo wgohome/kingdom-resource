@@ -10,6 +10,7 @@ from app.db.users_collection import (
     authenticate_user,
     create_access_token,
     create_user,
+    delete_user,
     find_all_users,
     get_admin_by_cookie,
     get_user_by_cookie,
@@ -84,11 +85,11 @@ def users_create(
     return RedirectResponse("/users", status_code=303)
 
 
-@router.delete("users/{id}", response_class=RedirectResponse)
+@router.delete("/users/{id}", response_class=RedirectResponse)
 def users_delete(
     id: str,
     admin_user: UserOut = Depends(get_admin_by_cookie),
     db: Database = Depends(get_db)
 ):
-    import pdb; pdb.set_trace()
+    _ = delete_user(ObjectId(id), db)
     return RedirectResponse("/users", status_code=303)

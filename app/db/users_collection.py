@@ -56,10 +56,13 @@ def create_user(user: User, db: Database) -> UserOut:
     return UserOut(**user_dict)
 
 
-# def delete_user(id: ObjectId, db: Database) -> UserOut:
-#     USERS_COLL = get_collection(UserDoc, db)
-#     import pdb; pdb.set_trace()
-#     user_dict = USER_COLL.delete_one({"_id": id})
+def delete_user(id: ObjectId, db: Database) -> UserOut | None:
+    USERS_COLL = get_collection(UserDoc, db)
+    user_dict = USERS_COLL.find_one_and_delete({"_id": id})
+    if user_dict is None:
+        return None
+    user_dict.pop("hashed_pw")
+    return UserOut(**user_dict)
 
 
 #
