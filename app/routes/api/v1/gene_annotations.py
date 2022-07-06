@@ -77,6 +77,8 @@ def post_one_gene_annotation(ga_in: GeneAnnotationIn, db: Database = Depends(get
     enforce_no_existing_ga(ga_in, db)
     ga_proc = convert_ga_in_to_ga_proc(ga_in, db)
     ga_out = insert_one_ga(ga_proc, db)
+    for gene_id in ga_out.gene_ids:
+        _ = add_annotations_to_gene(gene_id, [ga_out.id], db)
     return ga_out
 
 
@@ -93,16 +95,16 @@ def post_many_gene_annotations(
     if skip_duplicates is False:
         enforce_no_existing_gas(ga_input, db)
     gas_out = []
-    genes_update = defaultdict(list)
+    gene_map_ga = defaultdict(list)
     for ga_in in ga_input:
-        ga_proc = convert_ga_in_to_ga_proc(ga_in, db)
         if check_if_ga_exists(ga_in.type, ga_in.label, db) is False:
+            ga_proc = convert_ga_in_to_ga_proc(ga_in, db)
             ga_out = insert_one_ga(ga_proc, db)
             gas_out.append(ga_out)
             for gene_id in ga_proc.gene_ids:
-                genes_update[gene_id] = list(set(genes_update[gene_id]) & set(str(ga_out.id)))
-    for gene_id, ga_ids in genes_update.items():
-        add_annotations_to_gene(gene_id, ga_ids, db)
+                gene_map_ga[gene_id] = list(set(gene_map_ga[gene_id] + [ga_out.id]))
+    for gene_id, ga_ids in gene_map_ga.items():
+        _ = add_annotations_to_gene(gene_id, ga_ids, db)
     return gas_out
 
 

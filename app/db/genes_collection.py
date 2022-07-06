@@ -131,7 +131,7 @@ def add_annotations_to_gene(gene_id: PyObjectId, ga_ids: list[PyObjectId], db: D
     GENES_COLL = get_collection(GeneDoc, db)
     updated = GENES_COLL.find_one_and_update(
         {"_id": gene_id},
-        {"$push": {"anots": {"$each": ga_ids}}}
+        {"$addToSet": {"anots": {"$each": ga_ids}}}
     )
     return updated
 
