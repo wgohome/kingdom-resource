@@ -12,7 +12,7 @@ from app.models.sample_annotation import (
     SampleAnnotationDoc,
     SampleAnnotationInput,
     SampleAnnotationOut,
-    SampleAnnotationRow,
+    SampleAnnotationUnit,
 )
 
 
@@ -41,10 +41,10 @@ def find_sample_annotations_by_label(
 
 
 def __group_samples_by_annotation_labels(
-    rows: list[SampleAnnotationRow]
+    samples: list[SampleAnnotationUnit]
 ) -> dict[str, list[Sample]]:
     groups = defaultdict(list)
-    for row in rows:
+    for row in samples:
         groups[row.annotation_label].append(Sample(
             sample_label=row.sample_label,
             tpm_value=round(row.tpm, settings.N_DECIMALS)
@@ -57,12 +57,12 @@ def reshape_sa_input_to_sa_docs(
     species_id: ObjectId,
     gene_id: ObjectId
 ) -> list[SampleAnnotationDoc]:
-    groups = __group_samples_by_annotation_labels(sa_input.rows)
+    groups = __group_samples_by_annotation_labels(sa_input.samples)
     return [
         SampleAnnotationDoc(
             species_id=species_id,
             gene_id=gene_id,
-            annotation_type=sa_input.anontation_type,
+            annotation_type=sa_input.annotation_type,
             annotation_label=annotation_label,
             samples=samples
         )  # type: ignore
@@ -85,7 +85,7 @@ def enforce_no_existing_samples_for_gene(
         {"$project": {"_id": 0, "label": "$samples.lbl"}},
     ])
     existing_samples = {res["label"] for res in annotations}
-    incoming_samples = {row.sample_label for row in sa_input.rows}
+    incoming_samples = {row.sample_label for row in sa_input.samples}
     if existing_samples & incoming_samples != set():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -186,7 +186,10 @@ def update_affected_spm(
     sa_docs = [SampleAnnotationDoc(**sa_dict) for sa_dict in sa_dicts]
     total_avg_tpm = round(sum([sa_doc.avg_tpm for sa_doc in sa_docs]), settings.N_DECIMALS)
     for sa_doc in sa_docs:
-        sa_doc.spm = round(sa_doc.avg_tpm / total_avg_tpm, settings.N_DECIMALS)
+        if total_avg_tpm == 0:
+            sa_doc.spm = 0
+        else:
+            sa_doc.spm = round(sa_doc.avg_tpm / total_avg_tpm, settings.N_DECIMALS)
         _ = SA_COLL.update_one(
             {"_id": sa_doc.id},
             {"$set": {"spm": sa_doc.spm}}

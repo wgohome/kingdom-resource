@@ -68,7 +68,7 @@ def post_many_sample_annotations(
         enforce_no_existing_samples_for_gene(sa_input, species_id, gene_id, db)
     sa_docs = reshape_sa_input_to_sa_docs(sa_input, species_id, gene_id)
     sa_outs = [insert_or_update_one_sa_doc(sa_doc, db) for sa_doc in sa_docs]
-    update_affected_spm(species_id, gene_id, sa_input.anontation_type, db)
+    update_affected_spm(species_id, gene_id, sa_input.annotation_type, db)
     return sa_outs
 
 

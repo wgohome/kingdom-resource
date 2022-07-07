@@ -38,7 +38,7 @@ class SampleAnnotationBase(CustomBaseModel):
         return v.upper()
 
 
-class SampleAnnotationRow(CustomBaseModel):  # tpm row not sample annotation
+class SampleAnnotationUnit(CustomBaseModel):  # tpm row not sample annotation
     annotation_label: str
     sample_label: str
     tpm: float
@@ -47,8 +47,8 @@ class SampleAnnotationRow(CustomBaseModel):  # tpm row not sample annotation
 class SampleAnnotationInput(CustomBaseModel):
     species_taxid: int
     gene_label: str  # Main Gene Identifier used for this db
-    anontation_type: str  # Eg, Mapman annotations, GO, etc
-    rows: list[SampleAnnotationRow]
+    annotation_type: str  # Eg, Mapman annotations, GO, etc
+    samples: list[SampleAnnotationUnit]
 
 
 # class SampleAnnotationProcessed(SampleAnnotationBase):
