@@ -17,7 +17,7 @@ from app.db.users_collection import (
 )
 from app.models.user import User, UserOut
 
-router = APIRouter(tags=["users"])
+router = APIRouter(tags=["users"], include_in_schema=False)
 
 templates = Jinja2Templates(directory="templates")
 
