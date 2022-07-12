@@ -2,16 +2,18 @@ from pydantic import BaseSettings, EmailStr, SecretStr, validator
 
 
 class Settings(BaseSettings):
-    TITLE: str = "Kingdomwide Gene Expression Omnibus"
-    APP_NAME: str = "default_app"
+    TITLE: str = "Plant Gene Expression Omnibus"
+    APP_NAME: str = "plant_omnibus"
     FASTAPI_ENV: str = "dev"
-    MONGO_SERVER: str = "localhost"
-    MONGO_PORT: int = 27017
-    MONGO_USER: str | None = None
-    MONGO_PASSWORD: str | None = None
-    DATABASE_URL: str | None
+
+    SRV: bool = False
     DATABASE_NAME: str = ""
     TEST_DATABASE_NAME: str = ""
+    MONGO_SERVER_AND_PORT: str = "localhost"
+    DB_OPTIONS: str = ""
+    MONGO_USER: str | None = None
+    MONGO_PASSWORD: str | None = None
+    DATABASE_URL: str | None = None
 
     # Auth
     SECRET_KEY: str
@@ -31,24 +33,28 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encofing = "utf-8"
 
+    # Validators
+
     @validator("DATABASE_NAME", pre=True, always=True)
     def set_database_name(cls, v, values):
+        if v:  # Not None nor empty string
+            return v
         return f"{values['APP_NAME']}_{values['FASTAPI_ENV']}"
 
     @validator("TEST_DATABASE_NAME", pre=True, always=True)
     def set_test_database_name(cls, v, values):
+        if v:  # Not None nor empty string
+            return v
         return f"{values['APP_NAME']}_test"
 
     @validator("DATABASE_URL", pre=True, always=True)
     def set_database_url(cls, v, values):
-        if (
-            values["MONGO_USER"] == "" or
-            values["MONGO_PASSWORD"] == "" or
-            values["MONGO_USER"] is None or
-            values["MONGO_PASSWORD"] is None
-        ):
-            return f"mongodb://{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
-        return f"mongodb://{values['MONGO_USER']}:{values['MONGO_PASSWORD']}@{values['MONGO_SERVER']}:{values['MONGO_PORT']}"
+        if v:  # Not None nor empty string
+            return v
+        connection_string = "mongodb+srv" if values["SRV"] else "mongodb"
+        if values["MONGO_USER"] and values["MONGO_PASSWORD"]:
+            return f"{connection_string}://{values['MONGO_USER']}:{values['MONGO_PASSWORD']}@{values['MONGO_SERVER_AND_PORT']}/?{values['DB_OPTIONS']}"
+        return f"{connection_string}://{values['MONGO_SERVER_AND_PORT']}"
 
     @validator("ALGORITHM", pre=True, always=True)
     def set_algorithm(cls, v):
