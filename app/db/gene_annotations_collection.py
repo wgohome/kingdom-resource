@@ -114,11 +114,12 @@ def insert_or_replace_many_gas(ga_proc_list: list[GeneAnnotationProcessed], db: 
         # )
         # # BUG: annotations array will be reset! If don't want to reset, use patch instead
         to_write = ga_proc.dict_for_db()
-        _ = GA_COLL.replace_one(
+        result = GA_COLL.replace_one(
             {"type": ga_proc.type, "label": ga_proc.label},
             to_write,
             upsert=True
         )
+        to_write["_id"] = result.upserted_id
         final_docs.append(to_write)
         # BUG: _id is not updated in the dict
     return final_docs
@@ -147,8 +148,7 @@ def insert_one_new_ga_or_append_gene_ids(
 def delete_one_ga(ga_type: str, label: str, db: Database):
     GA_COLL = get_collection(GeneAnnotationDoc, db)
     deleted = GA_COLL.find_one_and_delete(
-        {"type": ga_type, "label": label},
-        {"_id": 0}
+        {"type": ga_type, "label": label}
     )
     if deleted is None:
         raise HTTPException(
