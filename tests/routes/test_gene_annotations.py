@@ -34,7 +34,7 @@ def ga_dict_1(genes_1):
         for gene_label in genes_1[0]
     ]
     ga_dict = {
-        "type": "test_mercator",
+        "type": "TEST_MERCATOR",
         "label": "1.1.1.2.2.1",
         "details": {
             "desc": "component PsbO/OEC33 of PS-II oxygen-evolving center",
@@ -55,7 +55,7 @@ def ga_dict_2(genes_2):
         for gene_label in genes_2[0]
     ]
     ga_dict = {
-        "type": "test_mercator",
+        "type": "TEST_MERCATOR",
         "label": "1.1.1.2.1.1",
         "details": {
             "desc": "component PsbA/D1 of PS-II reaction center complex",
@@ -71,8 +71,8 @@ def twenty_one_gas_list(many_genes_inserted):
     genes, taxid = many_genes_inserted
     return [
         {
-            "type": f"Gene Annotation Type {i // 5 + 1}",
-            "label": f"Gene Annotation Label {i}",
+            "type": f"GENE ANNOTATION TYPE {i // 5 + 1}",
+            "label": f"GENE ANNOTATION LABEL {i}",
             "details": {
                 "description": f"rubbish {i}"
             },
@@ -200,8 +200,8 @@ def test_patch_one_ga(ga_dict_1_inserted, t_client):
     ga_type = ga_dict_1_inserted["type"]
     label = ga_dict_1_inserted["label"]
     to_update = {
-        "type": "new type name",
-        "label": "new label name",
+        "type": "NEW TYPE NAME",
+        "label": "NEW LABEL NAME",
         "details": {"content": "no more details!"}
     }
     response = t_client.patch(
@@ -216,8 +216,8 @@ def test_patch_one_ga_unauthorized_field(ga_dict_1_inserted, t_client):
     ga_type = ga_dict_1_inserted["type"]
     label = ga_dict_1_inserted["label"]
     to_update = {
-        "type": "new type name",
-        "label": "new label name",
+        "type": "NEW TYPE NAME",
+        "label": "NEW LABEL NAME",
         "details": {"content": "no more details!"},
         "genes_ids": ["123456789012345678901234"]
     }
@@ -271,7 +271,7 @@ def test_put_replace_gas(twenty_one_gas_inserted, ga_dict_1, t_client):
     #   even if old doc has the field, will be replaced by default values set
     #
     to_replace = twenty_one_gas_inserted[0]
-    to_replace["label"] = to_replace["label"] + "_modified"
+    to_replace["label"] = to_replace["label"] + "_MODIFIED"
     to_replace["genes"] = []  # TODO
     to_replace.pop("_id")
     to_replace.pop("gene_ids")

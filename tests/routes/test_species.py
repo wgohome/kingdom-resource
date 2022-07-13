@@ -277,7 +277,7 @@ def test_put_replace_species(twenty_one_species_inserted, one_species_list, t_cl
     #   even if old doc has the field, will be replaced by default values set
     #
     to_replace = twenty_one_species_inserted[0]
-    to_replace["name"] = to_replace["name"] + "_modified"
+    to_replace["name"] = to_replace["name"] + "_MODIFIED"
     to_replace.pop("_id")
     to_replace.pop("qc_stat")
     to_replace.pop("created_at")
@@ -289,5 +289,5 @@ def test_put_replace_species(twenty_one_species_inserted, one_species_list, t_cl
     assert response.status_code == status.HTTP_200_OK
     response = t_client.get(f"/api/v1/species/{to_replace['taxid']}")
     assert response.status_code == status.HTTP_200_OK
-    assert "modified" in response.json()["name"]
+    assert "MODIFIED" in response.json()["name"]
     assert response.json()["qc_stat"] == {"log_processed": 0, "p_pseudoaligned": 0}

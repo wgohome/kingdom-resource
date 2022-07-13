@@ -47,7 +47,7 @@ def twenty_one_genes_list(one_species_inserted):
     species_taxid = one_species_inserted['taxid']
     species_list = [
         {
-            "label": f"Gene{8000 + i}",
+            "label": f"GENE{8000 + i}",
             "alias": [f"alias gene {8000 + i} spp {species_taxid}"]
         }
         for i in range(1, 22)
@@ -188,7 +188,7 @@ def test_patch_one_gene(one_gene_inserted, t_client):
 
 def test_patch_one_gene_unauthorized_field(one_gene_inserted, t_client):
     # Cannot update some restricted fields in species doc directly (via PATCH)
-    gene, taxid = one_gene_inserted
+    gene, taxid = one_gene_isnserted
     to_update = {
         "label": "new gene name",
         "alias": ["new gene alias"],
@@ -245,7 +245,7 @@ def test_put_replace_genes(twenty_one_genes_inserted, one_gene, t_client):
     #
     genes, taxid = twenty_one_genes_inserted
     to_replace = genes[0]
-    to_replace["label"] = to_replace["label"] + "_modified"
+    to_replace["label"] = to_replace["label"] + "_MODIFIED"
     to_replace.pop("_id")
     to_replace.pop("species_id")
     to_replace.pop("annotations")
@@ -256,4 +256,4 @@ def test_put_replace_genes(twenty_one_genes_inserted, one_gene, t_client):
     assert response.status_code == status.HTTP_200_OK
     response = t_client.get(f"/api/v1/species/{taxid}/genes/{to_replace['label']}")
     assert response.status_code == status.HTTP_200_OK
-    assert "modified" in response.json()["label"]
+    assert "MODIFIED" in response.json()["label"]
