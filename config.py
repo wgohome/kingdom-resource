@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     SRV: bool = False
     DATABASE_NAME: str = ""
     TEST_DATABASE_NAME: str = ""
-    MONGO_SERVER_AND_PORT: str = "localhost"
+    MONGO_SERVER_AND_PORT: str = "localhost://27017"
     DB_OPTIONS: str = ""
     MONGO_USER: str | None = None
     MONGO_PASSWORD: str | None = None
