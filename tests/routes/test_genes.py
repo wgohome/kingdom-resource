@@ -175,7 +175,7 @@ def test_delete_one_gene(one_gene_inserted, t_client):
 def test_patch_one_gene(one_gene_inserted, t_client):
     gene, taxid = one_gene_inserted
     to_update = {
-        "label": "new gene name",
+        "label": "NEW GENE NAME",
         "alias": ["new gene alias"]
     }
     response = t_client.patch(
@@ -188,9 +188,9 @@ def test_patch_one_gene(one_gene_inserted, t_client):
 
 def test_patch_one_gene_unauthorized_field(one_gene_inserted, t_client):
     # Cannot update some restricted fields in species doc directly (via PATCH)
-    gene, taxid = one_gene_isnserted
+    gene, taxid = one_gene_inserted
     to_update = {
-        "label": "new gene name",
+        "label": "NEW GENE NAME",
         "alias": ["new gene alias"],
         "anots": ["123456789012345678901234"]
     }
