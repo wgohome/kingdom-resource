@@ -1,3 +1,4 @@
+import math
 from os import pidfd_open
 from bson import ObjectId
 from collections import defaultdict
@@ -12,6 +13,7 @@ from app.models.sample_annotation import (
     SampleAnnotationDoc,
     SampleAnnotationInput,
     SampleAnnotationOut,
+    SampleAnnotationPage,
     SampleAnnotationUnit,
 )
 
@@ -19,25 +21,41 @@ from app.models.sample_annotation import (
 def find_sample_annotations_by_gene(
     species_id: ObjectId,
     gene_id: ObjectId,
+    page_num: int,
     db: Database
-) -> list[SampleAnnotationOut]:
+) -> SampleAnnotationPage:
     SA_COLL = get_collection(SampleAnnotationDoc, db)
-    return [
+    sa_docs = [
         SampleAnnotationOut(**sa_dict)
         for sa_dict in SA_COLL.find({"spe_id": species_id, "g_id": gene_id})
+        .skip((page_num - 1) * settings.PAGE_SIZE)
+        .limit(settings.PAGE_SIZE)
     ]
+    return SampleAnnotationPage(
+        page_total=math.ceil(SA_COLL.estimated_document_count() / settings.PAGE_SIZE),
+        curr_page=page_num,
+        payload=sa_docs
+    )
 
 
 def find_sample_annotations_by_label(
     annotation_type: str,
     annotation_label: str,
+    page_num: int,
     db: Database
-) -> list[SampleAnnotationOut]:
+) -> SampleAnnotationPage:
     SA_COLL = get_collection(SampleAnnotationDoc, db)
-    return [
+    sa_docs = [
         SampleAnnotationOut(**sa_dict)
-        for sa_dict in SA_COLL.find({"type": annotation_type, "lbl": annotation_label})
+        for sa_dict in SA_COLL.find({"type": annotation_type, "label": annotation_label})
+        .skip((page_num - 1) * settings.PAGE_SIZE)
+        .limit(settings.PAGE_SIZE)
     ]
+    return SampleAnnotationPage(
+        page_total=math.ceil(SA_COLL.estimated_document_count() / settings.PAGE_SIZE),
+        curr_page=page_num,
+        payload=sa_docs
+    )
 
 
 def __group_samples_by_annotation_labels(
@@ -62,8 +80,8 @@ def reshape_sa_input_to_sa_docs(
         SampleAnnotationDoc(
             species_id=species_id,
             gene_id=gene_id,
-            annotation_type=sa_input.annotation_type,
-            annotation_label=annotation_label,
+            type=sa_input.annotation_type,
+            label=annotation_label,
             samples=samples
         )  # type: ignore
         for annotation_label, samples in groups.items()
@@ -82,7 +100,7 @@ def enforce_no_existing_samples_for_gene(
     annotations = SA_COLL.aggregate([
         {"$match": {"spe_id": species_id, "g_id": gene_id}},
         {"$unwind": "$samples"},
-        {"$project": {"_id": 0, "label": "$samples.lbl"}},
+        {"$project": {"_id": 0, "label": "$samples.label"}},
     ])
     existing_samples = {res["label"] for res in annotations}
     incoming_samples = {row.sample_label for row in sa_input.samples}
@@ -109,26 +127,23 @@ def insert_or_update_one_sa_doc(
     # If it exists,
     #   Check which samples within the new SA input doc are new
     #   Update the sa doc with only the new samples, and not replace the existing samples
-
-    # TODO need to update the sample_annotation_ids in genes doc!
-
     SA_COLL = get_collection(SampleAnnotationDoc, db)
     curr_doc_dict = SA_COLL.find_one({
         "spe_id": sa_doc.spe_id,
         "g_id": sa_doc.g_id,
         "type": sa_doc.type,
-        "lbl": sa_doc.lbl
+        "label": sa_doc.label
     })
     if curr_doc_dict is None:
         return __insert_one_sample_annotation(sa_doc, db)
 
     curr_doc = SampleAnnotationDoc(**curr_doc_dict)
     assert curr_doc.id is not None
-    new_labels = {sample.lbl for sample in sa_doc.samples}
-    curr_labels = {sample.lbl for sample in curr_doc.samples}
+    new_labels = {sample.label for sample in sa_doc.samples}
+    curr_labels = {sample.label for sample in curr_doc.samples}
     samples_to_insert = [
         sample for sample in sa_doc.samples
-        if sample.lbl not in (new_labels & curr_labels)
+        if sample.label not in (new_labels & curr_labels)
     ]
     return __update_one_sample_annotation(curr_doc.id, samples_to_insert, db)
 
