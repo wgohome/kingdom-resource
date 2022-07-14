@@ -1,6 +1,6 @@
 from pydantic import Field, validator
 
-from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
+from .shared import BasePageModel, PyObjectId, CustomBaseModel, DocumentBaseModel
 
 #
 # Class naming conventions
@@ -12,19 +12,19 @@ from .shared import PyObjectId, CustomBaseModel, DocumentBaseModel
 
 
 class Sample(CustomBaseModel):
-    lbl: str = Field(alias="sample_label")
+    label: str = Field(alias="sample_label")
     tpm: float = Field(alias="tpm_value")
 
-    @validator("lbl", pre=True)
-    def upcase_lbl(cls, v):
+    @validator("label", pre=True)
+    def upcase_label(cls, v):
         return v.upper()
 
 
 class SampleAnnotationBase(CustomBaseModel):
     spe_id: PyObjectId = Field(alias="species_id")
     g_id: PyObjectId = Field(alias="gene_id")
-    type: str = Field(alias="annotation_type")
-    lbl: str = Field(alias="annotation_label")
+    type: str
+    label: str
     spm: float = 0
     avg_tpm: float = 0
     samples: list[Sample]
@@ -33,8 +33,8 @@ class SampleAnnotationBase(CustomBaseModel):
     def upcase_type(cls, v):
         return v.upper()
 
-    @validator("lbl", pre=True)
-    def upcase_lbl(cls, v):
+    @validator("label", pre=True)
+    def upcase_label(cls, v):
         return v.upper()
 
 
@@ -51,12 +51,12 @@ class SampleAnnotationInput(CustomBaseModel):
     samples: list[SampleAnnotationUnit]
 
 
-# class SampleAnnotationProcessed(SampleAnnotationBase):
-#     pass
-
-
 class SampleAnnotationOut(SampleAnnotationBase):
     id: PyObjectId | None = Field(alias="_id")
+
+
+class SampleAnnotationPage(BasePageModel):
+    payload: list[SampleAnnotationOut]
 
 
 class SampleAnnotationDoc(SampleAnnotationBase, DocumentBaseModel):

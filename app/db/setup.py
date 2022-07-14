@@ -43,17 +43,24 @@ def setup_indexes(db):
         name="unique_gene_annotations_type_and_label"
     )
     #
-    # To search sample annotations by type + label, gene
+    # To search sample annotations by species + gene (+ type + label)
     #
     get_collection(SampleAnnotationDoc, db).create_index(
         [
             ("spe_id", ASCENDING),
             ("g_id", ASCENDING),
             ("type", ASCENDING),
-            ("lbl", ASCENDING),
+            ("label", ASCENDING),
         ],
         unique=True,
         name="unique_sample_annotation_doc"
+    )
+    #
+    # To search sample annotations by type + label
+    #
+    get_collection(SampleAnnotationDoc, db).create_index(
+        [("type", ASCENDING), ("label", ASCENDING)],
+        name="sample_annotation_by_type_labels"
     )
     #
     # To search for users by email
