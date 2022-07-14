@@ -27,6 +27,8 @@ def run_test_seeder(db: Database) -> None:
 @pytest.fixture
 def get_db_for_test():
     client = MongoClient(settings.DATABASE_URL)
+    if settings.FASTAPI_ENV == "cicd":
+        print(f"DATABASE_URL is {settings.DATABASE_URL}\n\n")
     if settings.TEST_DATABASE_NAME is None or settings.TEST_DATABASE_NAME == "":
         raise ValueError("TEST_DATABASE_NAME env variable missing")
     client.drop_database(settings.TEST_DATABASE_NAME)
