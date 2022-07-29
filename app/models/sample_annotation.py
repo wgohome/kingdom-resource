@@ -43,12 +43,20 @@ class SampleAnnotationUnit(CustomBaseModel):  # tpm row not sample annotation
     sample_label: str
     tpm: float
 
+    @validator("annotation_label", "sample_label", pre=True)
+    def upcase_type(cls, v):
+        return v.upper()
+
 
 class SampleAnnotationInput(CustomBaseModel):
     species_taxid: int
     gene_label: str  # Main Gene Identifier used for this db
     annotation_type: str  # Eg, Mapman annotations, GO, etc
     samples: list[SampleAnnotationUnit]
+
+    @validator("gene_label", "annotation_type", pre=True)
+    def upcase_type(cls, v):
+        return v.upper()
 
 
 class SampleAnnotationOut(SampleAnnotationBase):
